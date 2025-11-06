@@ -2,10 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/landing/logo";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "./mode-toggle";
+import { ModeToggle } from "../mode-toggle";
 import LocalFont from "next/font/local"
 
 const menuItems = [
@@ -16,7 +16,7 @@ const menuItems = [
 ];
 
 const oughter = LocalFont({
-  src: "../fonts/Oughter.woff2",
+  src: "../../fonts/Oughter.woff2",
 });
 
 export default function Header() {
