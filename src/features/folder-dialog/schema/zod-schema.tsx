@@ -2,18 +2,47 @@ import { z } from "zod"
 
 // Helper function to count emojis in a string
 function countEmojis(str: string): number {
-  // Regex to match emojis (including compound emojis, skin tones, etc.)
-  const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
-  const matches = str.match(emojiRegex)
-  return matches ? matches.length : 0
+  // Use Intl.Segmenter to properly count grapheme clusters (visual characters)
+  // This handles compound emojis, skin tones, and variation selectors correctly
+  const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
+  const segments = Array.from(segmenter.segment(str))
+  
+  // Count segments that contain emoji characters
+  let emojiCount = 0
+  const emojiRegex = /\p{Emoji}/u
+  
+  for (const segment of segments) {
+    if (emojiRegex.test(segment.segment)) {
+      emojiCount++
+    }
+  }
+  
+  return emojiCount
 }
 
 // Helper function to check if string is emoji-only
 function isEmojiOnly(str: string): boolean {
-  // Remove all emojis and check if anything remains
-  const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
-  const withoutEmojis = str.replace(emojiRegex, '').trim()
-  return withoutEmojis.length === 0 && str.trim().length > 0
+  // Use Intl.Segmenter to properly handle grapheme clusters
+  const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
+  const segments = Array.from(segmenter.segment(str))
+  
+  const emojiRegex = /\p{Emoji}/u
+  let hasEmoji = false
+  let hasText = false
+  
+  for (const segment of segments) {
+    const char = segment.segment.trim()
+    if (char.length === 0) continue // Skip whitespace
+    
+    if (emojiRegex.test(char)) {
+      hasEmoji = true
+    } else {
+      hasText = true
+    }
+  }
+  
+  // Return true only if there's emoji but no text
+  return hasEmoji && !hasText
 }
 
 export const folderSchema = z.object({
@@ -33,7 +62,7 @@ export const folderSchema = z.object({
     .refine(
       (val) => !isEmojiOnly(val),
       {
-        message: "Folder name cannot be emoji only",
+        message: "Folder name cannot be emoji only - please add text",
       }
     ),
   emoji: z.string().optional(), // Make emoji optional since it can be in the name or not
