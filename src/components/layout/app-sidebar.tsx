@@ -40,13 +40,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
       isActive: true,
     },
     {
       title: "Notes",
-      url: "#",
+      url: "/notes",
       icon: NotepadText,
       items: [
         {
@@ -65,7 +65,7 @@ const data = {
     },
     {
       title: "Journal",
-      url: "#",
+      url: "/journals",
       icon: BookHeart,
       items: [
         {
@@ -84,7 +84,7 @@ const data = {
     },
     {
       title: "Kanban",
-      url: "#",
+      url: "/kanbans",
       icon: SquareKanban,
       items: [
         {
@@ -107,7 +107,7 @@ const data = {
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {
@@ -155,7 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <a href="/">
                 <div className={`grid flex-1 text-left text-xl leading-tight ${oughter.className}`}>
                   MiriNote
                 </div>
