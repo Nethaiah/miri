@@ -4,7 +4,6 @@ import * as React from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import {
   Dialog,
@@ -32,35 +31,8 @@ import {
   EmojiPickerFooter,
 } from "@/components/ui/emoji-picker"
 
-import { cn } from "@/lib/utils"
-
-// 🧩 Folder schema
-export const folderSchema = z.object({
-  name: z.string().min(1, "Folder name is required"),
-  emoji: z.string().min(1, "Please select an emoji"),
-  description: z.string().optional(),
-})
-
-export type FolderFormData = z.infer<typeof folderSchema>
-
-// 🪶 Preset folders
-const PRESETS: Record<string, { emoji: string; name: string }[]> = {
-  Notes: [
-    { emoji: "💡", name: "Personal" },
-    { emoji: "💼", name: "Work" },
-    { emoji: "📚", name: "Study" },
-  ],
-  Journal: [
-    { emoji: "📆", name: "Daily Logs" },
-    { emoji: "💭", name: "Reflections" },
-    { emoji: "🕊️", name: "Gratitude" },
-  ],
-  Kanban: [
-    { emoji: "🚀", name: "Projects" },
-    { emoji: "🧠", name: "Learning" },
-    { emoji: "🎯", name: "Goals" },
-  ],
-}
+import { FOLDER_PRESETS } from "@/features/folder-dialog/lib/folder-presets"
+import { folderSchema, type FolderFormData } from "@/features/folder-dialog/schema/zod-schema"
 
 type Props = {
   parent: "Notes" | "Journal" | "Kanban"
@@ -77,9 +49,8 @@ export function FolderDialog({ parent, onCreate }: Props) {
 
   const handleSubmit = (data: FolderFormData) => {
     const payload = { ...data, parent }
-    console.log("Created folder:", payload)
 
-    toast.success(`${data.emoji} ${data.name} created under ${parent}`, {
+    toast.success(`${data.name} created under ${parent}`, {
       description: data.description || "Folder successfully created!",
     })
 
@@ -92,12 +63,19 @@ export function FolderDialog({ parent, onCreate }: Props) {
   const handleEmojiSelect = (emoji: string) => {
     const currentName = form.getValues("name")
     form.setValue("emoji", emoji)
-    if (!currentName.startsWith(emoji)) {
-      form.setValue("name", `${emoji} ${currentName.trim()}`)
-    }
+    
+    // Remove any existing emojis from the name first
+    const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
+    const nameWithoutEmojis = currentName.replace(emojiRegex, '').trim()
+    
+    // Add the new emoji at the start
+    form.setValue("name", `${emoji} ${nameWithoutEmojis}`)
+    
+    // Trigger validation
+    form.trigger("name")
   }
 
-  const presets = PRESETS[parent] || []
+  const presets = FOLDER_PRESETS[parent] || []
 
   const labelText =
     parent === "Kanban"
@@ -155,6 +133,7 @@ export function FolderDialog({ parent, onCreate }: Props) {
                     onClick={() => {
                       form.setValue("emoji", preset.emoji)
                       form.setValue("name", `${preset.emoji} ${preset.name}`)
+                      form.trigger("name")
                     }}
                     className="flex items-center justify-start gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted"
                   >
@@ -179,7 +158,7 @@ export function FolderDialog({ parent, onCreate }: Props) {
                           {form.watch("emoji") || "🙂"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" className="w-[320px] p-0">
+                      <PopoverContent align="start" className="w-auto p-0">
                         <div className="h-72">
                           <EmojiPicker
                             onEmojiSelect={(emoji) => handleEmojiSelect(emoji.emoji)}
@@ -191,7 +170,19 @@ export function FolderDialog({ parent, onCreate }: Props) {
                         </div>
                       </PopoverContent>
                     </Popover>
-                    <Input {...field} placeholder="e.g. Personal 💡" />
+                    <Input 
+                      {...field} 
+                      placeholder="e.g. Personal 💡"
+                      onChange={(e) => {
+                        field.onChange(e)
+                        // Update emoji field based on name content
+                        const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
+                        const emojis = e.target.value.match(emojiRegex)
+                        if (emojis && emojis.length > 0) {
+                          form.setValue("emoji", emojis[0])
+                        }
+                      }}
+                    />
                   </div>
                   {fieldState.error && <FieldError errors={[fieldState.error]} />}
                 </Field>

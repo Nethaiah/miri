@@ -1,26 +1,45 @@
-// src/features/notes/data/folderPresets.ts
-export type Preset = {
-  name: string
+// 🪶 Preset folders for different categories
+
+export type FolderPreset = {
   emoji: string
-  color?: string
+  name: string
 }
 
-const PRESETS: Record<string, Preset[]> = {
+export const FOLDER_PRESETS: Record<string, FolderPreset[]> = {
   Notes: [
-    { name: "Quick Notes", emoji: "✍️", color: "bg-yellow-200" },
-    { name: "Archive", emoji: "🗄️", color: "bg-slate-200" },
-    { name: "Ideas", emoji: "💡", color: "bg-amber-200" },
+    { emoji: "💡", name: "Personal" },
+    { emoji: "💼", name: "Work" },
+    { emoji: "📚", name: "Study" },
+    { emoji: "🎯", name: "Goals" },
+    { emoji: "📝", name: "Ideas" },
+    { emoji: "🏠", name: "Home" },
+    { emoji: "💰", name: "Finance" },
+    { emoji: "🏋️", name: "Fitness" },
+    { emoji: "🍳", name: "Recipes" },
+    { emoji: "✈️", name: "Travel" },
   ],
   Journal: [
-    { name: "Daily Logs", emoji: "📆", color: "bg-sky-200" },
-    { name: "Reflections", emoji: "💭", color: "bg-rose-100" },
-    { name: "Gratitude", emoji: "🙏", color: "bg-green-100" },
+    { emoji: "📆", name: "Daily Logs" },
+    { emoji: "💭", name: "Reflections" },
+    { emoji: "🕊️", name: "Gratitude" },
+    { emoji: "🌟", name: "Achievements" },
+    { emoji: "💪", name: "Personal Growth" },
+    { emoji: "❤️", name: "Relationships" },
+    { emoji: "🧘", name: "Mindfulness" },
+    { emoji: "😊", name: "Mood Tracker" },
+    { emoji: "🎨", name: "Creative Ideas" },
+    { emoji: "📖", name: "Reading Log" },
   ],
   Kanban: [
-    { name: "Backlog", emoji: "📥", color: "bg-indigo-100" },
-    { name: "In Progress", emoji: "🔧", color: "bg-orange-100" },
-    { name: "Done", emoji: "✅", color: "bg-emerald-100" },
+    { emoji: "🚀", name: "Projects" },
+    { emoji: "🧠", name: "Learning" },
+    { emoji: "🎯", name: "Goals" },
+    { emoji: "💻", name: "Development" },
+    { emoji: "🎨", name: "Design" },
+    { emoji: "📱", name: "Mobile App" },
+    { emoji: "🌐", name: "Website" },
+    { emoji: "🛠️", name: "Maintenance" },
+    { emoji: "🔬", name: "Research" },
+    { emoji: "📊", name: "Marketing" },
   ],
 }
-
-export default PRESETS
