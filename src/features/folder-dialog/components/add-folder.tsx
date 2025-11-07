@@ -5,10 +5,9 @@ import * as React from "react"
 import { FolderDialog } from "@/features/folder-dialog/components/folder-dialog"
 
 type Props = {
-  parent: string
-  onCreate?: (payload: { parent: string; name: string; emoji: string }) => void
+  parent: "Notes" | "Journal" | "Kanban"
 }
 
-export function FolderButton({ parent, onCreate }: Props) {
-  return <FolderDialog parent={parent} onCreate={onCreate} />
+export function FolderButton({ parent }: Props) {
+  return <FolderDialog parent={parent} />
 }

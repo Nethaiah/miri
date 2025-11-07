@@ -1,4 +1,3 @@
-// src/features/notes/components/nav-main.tsx
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
@@ -29,10 +28,7 @@ export function NavMain({
     url: string
     icon: LucideIcon
     isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
+    items?: { title: string; url: string }[]
   }[]
 }) {
   return (
@@ -60,12 +56,11 @@ export function NavMain({
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {/* Insert + New Folder as first sub-item for folderable sections */}
                       {isFolderable && (
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild>
-                            <div className="px-2 py-1">
-                              <FolderButton parent={item.title} />
+                            <div className="w-full">
+                              <FolderButton parent={item.title as any} />
                             </div>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
