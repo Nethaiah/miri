@@ -1,3 +1,4 @@
+// src/features/notes/components/nav-main.tsx
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
@@ -17,6 +18,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+
+import { FolderButton } from "@/features/folder-dialog/components/add-folder"
 
 export function NavMain({
   items,
@@ -38,6 +41,7 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0
+          const isFolderable = ["Notes", "Journal", "Kanban"].includes(item.title)
 
           return (
             <SidebarMenuItem key={item.title}>
@@ -56,6 +60,17 @@ export function NavMain({
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
+                      {/* Insert + New Folder as first sub-item for folderable sections */}
+                      {isFolderable && (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <div className="px-2 py-1">
+                              <FolderButton parent={item.title} />
+                            </div>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )}
+
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
