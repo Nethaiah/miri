@@ -62,7 +62,7 @@ export const folderSchema = z.object({
     .refine(
       (val) => !isEmojiOnly(val),
       {
-        message: "Folder name cannot be emoji only - please add text",
+        message: "Folder name cannot be emoji only",
       }
     ),
   emoji: z.string().optional(), // Make emoji optional since it can be in the name or not
