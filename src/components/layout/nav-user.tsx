@@ -94,6 +94,10 @@ export function NavUser({
                 <Moon className="mr-2 h-4 w-4" />
                 <span>Dark</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")}>
+                <span className="mr-2 h-4 w-4">💻</span>
+                <span>System</span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
