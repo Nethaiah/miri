@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { auth } from "@/server/hono/lib/auth";
+import { auth } from "@/lib/auth";
 
 const signout = new Hono();
 

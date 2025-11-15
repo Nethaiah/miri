@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { auth } from "@/server/hono/lib/auth";
+import { auth } from "@/lib/auth";
 import { zValidator } from "@hono/zod-validator";
 import { signupSchema } from "@/features/auth/sign-up/schema/zod-schema"
 
@@ -14,7 +14,7 @@ signup.post("/", zValidator("json", signupSchema), async (c) => {
         name,
         email,
         password,
-        callbackURL: "http://localhost:3000/sign-in",
+        callbackURL: `${process.env.NEXT_PUBLIC_URL}/sign-in`,
       },
     });
 

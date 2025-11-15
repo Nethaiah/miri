@@ -4,6 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -24,25 +25,92 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { loginSchema, LoginFormData } from "@/features/auth/sign-in/schema/zod-schema" // adjust path if needed
+import { signinSchema, SigninFormData } from "@/features/auth/sign-in/schema/zod-schema"
+import { client } from "@/lib/api-client"
 
-export function LoginForm({
+export function SigninForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const router = useRouter()
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [isSocialLoading, setIsSocialLoading] = React.useState<string | null>(null)
+  
+  const form = useForm<SigninFormData>({
+    resolver: zodResolver(signinSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   })
 
-  const onSubmit = (data: LoginFormData) => {
-    toast("Login successful!", {
-      description: `Welcome back, ${data.email}!`,
-      position: "bottom-right",
-    })
+  const onSubmit = async (data: SigninFormData) => {
+    setIsLoading(true)
+    
+    try {
+      const response = await (client as any).auth["sign-in"].$post({
+        json: {
+          email: data.email,
+          password: data.password,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData?.error || "Failed to sign in"
+        throw new Error(errorMessage)
+      }
+
+      toast.success("Signed in successfully!", {
+        description: `Welcome back, ${data.email}!`,
+        position: "bottom-right",
+      })
+      
+      router.replace("/dashboard")
+    } catch (error) {
+      toast.error("Sign in failed", {
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to sign in",
+        position: "bottom-right",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (provider: "google" | "github") => {
+    setIsSocialLoading(provider)
+    
+    try {
+      const response = await (client as any).auth["social"].$post({
+        json: {
+          provider,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData?.error || `Failed to login with ${provider}`
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      
+      // The auth API should handle the redirect automatically
+      // If it returns a redirect URL, we can use it
+      if (result.data?.url) {
+        window.location.href = result.data.url
+      }
+    } catch (error) {
+      toast.error(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login failed`, {
+        description: error instanceof Error 
+          ? error.message 
+          : `Failed to login with ${provider}`,
+        position: "bottom-right",
+      })
+      setIsSocialLoading(null)
+    }
   }
 
   return (
@@ -71,6 +139,7 @@ export function LoginForm({
                       type="email"
                       placeholder="m@example.com"
                       aria-invalid={fieldState.invalid}
+                      disabled={isLoading}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -99,6 +168,7 @@ export function LoginForm({
                       id="password"
                       type="password"
                       aria-invalid={fieldState.invalid}
+                      disabled={isLoading}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -108,8 +178,12 @@ export function LoginForm({
               />
 
               <Field>
-                <Button type="submit" form="login-form">
-                  Login
+                <Button 
+                  type="submit" 
+                  form="login-form"
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isLoading ? "Signing in..." : "Login"}
                 </Button>
               </Field>
 
@@ -118,11 +192,23 @@ export function LoginForm({
               </FieldSeparator>
 
               <Field className="grid grid-cols-2 gap-4">
-                <Button variant="outline" type="button" className="cursor-pointer">
-                  Google
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  className="cursor-pointer"
+                  onClick={() => handleSocialLogin("google")}
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isSocialLoading === "google" ? "Loading..." : "Google"}
                 </Button>
-                <Button variant="outline" type="button" className="cursor-pointer">
-                  Github
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  className="cursor-pointer"
+                  onClick={() => handleSocialLogin("github")}
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isSocialLoading === "github" ? "Loading..." : "Github"}
                 </Button>
               </Field>
 

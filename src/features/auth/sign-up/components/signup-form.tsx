@@ -4,6 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,26 +26,93 @@ import {
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { signupSchema, SignupFormData } from "@/features/auth/sign-up/schema/zod-schema"
+import { client } from "@/lib/api-client"
 
 export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [isSocialLoading, setIsSocialLoading] = React.useState<string | null>(null)
+  
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
-      confirmPassword: "",
     },
   })
 
-  const onSubmit = (data: SignupFormData) => {
-    toast("Account created successfully!", {
-      description: `Welcome, ${data.name}!`,
-      position: "bottom-right",
-    })
+  const onSubmit = async (data: SignupFormData) => {
+    setIsLoading(true)
+    
+    try {
+      const response = await (client as any).auth["sign-up"].$post({
+        json: {
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData?.error || "Failed to create account"
+        throw new Error(errorMessage)
+      }
+
+      toast.success("Account created successfully!", {
+        description: "You can now sign in to continue.",
+        position: "bottom-right",
+      })
+      
+      router.push("/sign-in")
+    } catch (error) {
+      toast.error("Signup failed", {
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to create account",
+        position: "bottom-right",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (provider: "google" | "github") => {
+    setIsSocialLoading(provider)
+    
+    try {
+      const response = await (client as any).auth["social"].$post({
+        json: {
+          provider,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData?.error || `Failed to login with ${provider}`
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      
+      // The auth API should handle the redirect automatically
+      // If it returns a redirect URL, we can use it
+      if (result.data?.url) {
+        window.location.href = result.data.url
+      }
+    } catch (error) {
+      toast.error(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login failed`, {
+        description: error instanceof Error 
+          ? error.message 
+          : `Failed to login with ${provider}`,
+        position: "bottom-right",
+      })
+      setIsSocialLoading(null)
+    }
   }
 
   return (
@@ -72,6 +140,7 @@ export function SignupForm({
                       id="name"
                       placeholder="John Doe"
                       aria-invalid={fieldState.invalid}
+                      disabled={isLoading}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -93,6 +162,7 @@ export function SignupForm({
                       type="email"
                       placeholder="m@example.com"
                       aria-invalid={fieldState.invalid}
+                      disabled={isLoading}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -101,7 +171,7 @@ export function SignupForm({
                 )}
               />
 
-              {/* Password + Confirm */}
+              {/* Password */}
               <Controller
                 name="password"
                 control={form.control}
@@ -113,26 +183,7 @@ export function SignupForm({
                       id="password"
                       type="password"
                       aria-invalid={fieldState.invalid}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
-                name="confirmPassword"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="confirmPassword">
-                      Confirm Password
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="confirmPassword"
-                      type="password"
-                      aria-invalid={fieldState.invalid}
+                      disabled={isLoading}
                     />
                     {fieldState.invalid && (
                       <FieldError errors={[fieldState.error]} />
@@ -142,8 +193,13 @@ export function SignupForm({
               />
 
               <Field>
-                <Button type="submit" form="signup-form" className="cursor-pointer">
-                  Create Account
+                <Button 
+                  type="submit" 
+                  form="signup-form" 
+                  className="cursor-pointer"
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
                 </Button>
               </Field>
 
@@ -152,11 +208,23 @@ export function SignupForm({
               </FieldSeparator>
 
               <Field className="grid grid-cols-2 gap-4">
-                <Button variant="outline" type="button" className="cursor-pointer">
-                  Google
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  className="cursor-pointer"
+                  onClick={() => handleSocialLogin("google")}
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isSocialLoading === "google" ? "Loading..." : "Google"}
                 </Button>
-                <Button variant="outline" type="button" className="cursor-pointer">
-                  Github
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  className="cursor-pointer"
+                  onClick={() => handleSocialLogin("github")}
+                  disabled={isLoading || isSocialLoading !== null}
+                >
+                  {isSocialLoading === "github" ? "Loading..." : "Github"}
                 </Button>
               </Field>
 

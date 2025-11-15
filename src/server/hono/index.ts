@@ -1,10 +1,11 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
-import { auth } from "./lib/auth"
+import { auth } from "../../lib/auth"
 import { logger } from "hono/logger"
 import signup from "./route/auth/sign-up";
 import signin from "./route/auth/sign-in"
 import signout from "./route/auth/sign-out"
+import socialAuth from "./route/auth/social";
 
 const app = new Hono<{
   Variables: {
@@ -17,7 +18,7 @@ const app = new Hono<{
 app.use(
   '*',
   cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.NEXT_PUBLIC_URL!,
     allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Content-Type'],
     allowMethods: ['POST', 'GET', 'OPTIONS'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
@@ -60,12 +61,12 @@ app.get("/session", (c) => {
   });
 });
 
-// auth
 // auth routes - mounted under /auth path
 const authRoutes = new Hono()
   .route("/sign-up", signup)
   .route("/sign-in", signin)
-  .route("/sign-out", signout);
+  .route("/sign-out", signout)
+  .route("/social", socialAuth);
 
 app.route("/auth", authRoutes);
 
