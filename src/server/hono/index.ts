@@ -5,7 +5,7 @@ import { logger } from "hono/logger"
 import signup from "./route/auth/sign-up";
 import signin from "./route/auth/sign-in"
 import signout from "./route/auth/sign-out"
-import socialAuth from "./route/auth/social";
+import socialAuth from "./route/auth/google";
 
 const app = new Hono<{
   Variables: {

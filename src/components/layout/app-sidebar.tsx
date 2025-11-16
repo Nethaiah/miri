@@ -36,13 +36,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
       isActive: true,
     },
     {
       title: "Notes",
-      url: "#",
+      url: "/notes",
       icon: NotepadText,
       items: [
         {
@@ -60,8 +60,8 @@ const data = {
       ],
     },
     {
-      title: "Journal",
-      url: "#",
+      title: "Journals",
+      url: "/journals",
       icon: BookHeart,
       items: [
         {
@@ -79,8 +79,8 @@ const data = {
       ],
     },
     {
-      title: "Kanban",
-      url: "#",
+      title: "Kanbans",
+      url: "/kanbans",
       icon: SquareKanban,
       items: [
         {
@@ -103,7 +103,7 @@ const data = {
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
       items: [
         {

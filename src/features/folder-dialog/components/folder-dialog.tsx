@@ -35,26 +35,69 @@ import { FOLDER_PRESETS } from "@/features/folder-dialog/lib/folder-presets"
 import { folderSchema, type FolderFormData } from "@/features/folder-dialog/schema/zod-schema"
 
 type Props = {
-  parent: "Notes" | "Journal" | "Kanban"
+  parent: "Notes" | "Journals" | "Kanbans"
   onCreate?: (payload: FolderFormData & { parent: string }) => void
+  onUpdate?: (payload: FolderFormData & { parent: string; originalName: string }) => void
+  initialData?: { name: string; parent: string }
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function FolderDialog({ parent, onCreate }: Props) {
-  const [open, setOpen] = React.useState(false)
+export function FolderDialog({ 
+  parent, 
+  onCreate, 
+  onUpdate,
+  initialData,
+  open: controlledOpen,
+  onOpenChange
+}: Props) {
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  
+  // Use controlled open if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
+
+  const isEditMode = !!initialData
 
   const form = useForm<FolderFormData>({
     resolver: zodResolver(folderSchema),
     defaultValues: { name: "", emoji: "", description: "" },
   })
 
+  // Prefill form when initialData changes (edit mode)
+  React.useEffect(() => {
+    if (initialData && open) {
+      // Extract emoji from name if present
+      const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
+      const emojis = initialData.name.match(emojiRegex)
+      const emoji = emojis?.[0] || ""
+      
+      form.reset({
+        name: initialData.name,
+        emoji: emoji,
+        description: ""
+      })
+    } else if (!open) {
+      // Reset form when dialog closes
+      form.reset({ name: "", emoji: "", description: "" })
+    }
+  }, [initialData, open, form])
+
   const handleSubmit = (data: FolderFormData) => {
     const payload = { ...data, parent }
 
-    toast.success(`${data.name} created under ${parent}`, {
-      description: data.description || "Folder successfully created!",
-    })
+    if (isEditMode && onUpdate && initialData) {
+      toast.success(`${data.name} updated`, {
+        description: data.description || "Folder successfully updated!",
+      })
+      onUpdate({ ...payload, originalName: initialData.name })
+    } else {
+      toast.success(`${data.name} created under ${parent}`, {
+        description: data.description || "Folder successfully created!",
+      })
+      onCreate?.(payload)
+    }
 
-    onCreate?.(payload)
     setOpen(false)
     form.reset()
   }
@@ -78,42 +121,48 @@ export function FolderDialog({ parent, onCreate }: Props) {
   const presets = FOLDER_PRESETS[parent] || []
 
   const labelText =
-    parent === "Kanban"
+    parent === "Kanbans"
       ? "+ Kanban Board"
-      : parent === "Journal"
+      : parent === "Journals"
       ? "+ Journal Folder"
-      : "+ Notes Folder"
+      : "+ Note Folder"
+
+  const dialogTitle = isEditMode 
+    ? (parent === "Kanbans" ? "Rename Board" : "Rename Folder")
+    : (parent === "Kanbans" ? "New Board" : "New Folder")
+
+  const dialogDescription = isEditMode
+    ? `Update the ${parent === "Kanbans" ? "board" : "folder"} name and details.`
+    : `Complete the form below to create a new ${parent === "Kanbans" ? "board" : "folder"} under ${parent}.`
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild className="w-full justify-start text-sm h-8 px-2">
-        <div className="w-full">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sm h-8 px-2"
-          >
-            {labelText}
-          </Button>
-        </div>
-      </DialogTrigger>
+      {!isEditMode && (
+        <DialogTrigger asChild className="w-full justify-start text-sm h-8 px-2">
+          <div className="w-full">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-sm h-8 px-2"
+            >
+              {labelText}
+            </Button>
+          </div>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             <span>
               {parent === "Notes" && "🗒️"}
-              {parent === "Journal" && "📓"}
-              {parent === "Kanban" && "📋"}
+              {parent === "Journals" && "📓"}
+              {parent === "Kanbans" && "📋"}
             </span>
-            {parent === "Kanban" ? "New Board" : "New Folder"}
+            {dialogTitle}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Complete the form below to create a new{" "}
-            <span>
-              {parent === "Kanban" ? "board" : "folder"}
-            </span>{" "}
-            under {parent}.
+            {dialogDescription}
           </p>
         </DialogHeader>
 
@@ -123,8 +172,8 @@ export function FolderDialog({ parent, onCreate }: Props) {
           id={`form-${parent}`}
         >
           <FieldGroup>
-            {/* Preset folder cards */}
-            {presets.length > 0 && (
+            {/* Preset folder cards - only show in create mode */}
+            {!isEditMode && presets.length > 0 && (
               <div className="grid grid-cols-2 gap-2">
                 {presets.map((preset) => (
                   <button
@@ -214,7 +263,9 @@ export function FolderDialog({ parent, onCreate }: Props) {
               >
                 Cancel
               </Button>
-              <Button type="submit">Create</Button>
+              <Button type="submit">
+                {isEditMode ? "Update" : "Create"}
+              </Button>
             </div>
           </DialogFooter>
         </form>

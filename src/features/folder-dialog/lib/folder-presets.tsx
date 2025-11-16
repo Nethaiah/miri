@@ -18,7 +18,7 @@ export const FOLDER_PRESETS: Record<string, FolderPreset[]> = {
     { emoji: "🍳", name: "Recipes" },
     { emoji: "✈️", name: "Travel" },
   ],
-  Journal: [
+  Journals: [
     { emoji: "📆", name: "Daily Logs" },
     { emoji: "💭", name: "Reflections" },
     { emoji: "🕊️", name: "Gratitude" },
@@ -30,7 +30,7 @@ export const FOLDER_PRESETS: Record<string, FolderPreset[]> = {
     { emoji: "🎨", name: "Creative Ideas" },
     { emoji: "📖", name: "Reading Log" },
   ],
-  Kanban: [
+  Kanbans: [
     { emoji: "🚀", name: "Projects" },
     { emoji: "🧠", name: "Learning" },
     { emoji: "🎯", name: "Goals" },
