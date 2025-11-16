@@ -45,6 +45,11 @@ function isEmojiOnly(str: string): boolean {
   return hasEmoji && !hasText
 }
 
+// Category type schema
+export const categoryTypeSchema = z.enum(["Notes", "Journals", "Kanbans"])
+export type CategoryType = z.infer<typeof categoryTypeSchema>
+
+// Folder schema - used when creating/updating folders
 export const folderSchema = z.object({
   name: z
     .string()
@@ -66,7 +71,14 @@ export const folderSchema = z.object({
       }
     ),
   emoji: z.string().optional(), // Make emoji optional since it can be in the name or not
-  description: z.string().optional(),
+  description: z.string().max(500, "Description must be 500 characters or less").optional(),
 })
 
 export type FolderFormData = z.infer<typeof folderSchema>
+
+// Folder with parent category (for API operations)
+export const folderWithParentSchema = folderSchema.extend({
+  parent: categoryTypeSchema,
+})
+
+export type FolderWithParentData = z.infer<typeof folderWithParentSchema>

@@ -30,6 +30,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useSidebar } from "@/components/ui/sidebar"
 import { toast } from "sonner"
+import { useNavState } from "@/components/layout/app-sidebar"
+import type { CategoryType } from "@/features/folder-dialog/schema/zod-schema"
+import { client } from "@/lib/api-client"
+import type { Folder } from "@/db/schema"
 
 export function NavMain({
   items,
@@ -43,13 +47,123 @@ export function NavMain({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const { openItems, toggleItem } = useNavState()
+
+  // Folders state organized by category
+  const [foldersByCategory, setFoldersByCategory] = React.useState<Record<CategoryType, Folder[]>>({
+    Notes: [],
+    Journals: [],
+    Kanbans: [],
+  })
 
   // rename modal control
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false)
   const [editingFolder, setEditingFolder] = React.useState<{
+    id: string
     name: string
-    parent: "Notes" | "Journals" | "Kanbans"
+    parent: CategoryType
   } | null>(null)
+
+  // Fetch folders for a specific category
+  const fetchFolders = React.useCallback(async (category: CategoryType) => {
+    try {
+      const res = await (client as any).folders.$get({
+        query: { category },
+      })
+      
+      if (!res.ok) {
+        throw new Error("Failed to fetch folders")
+      }
+      
+      const data = await res.json()
+      setFoldersByCategory((prev) => ({
+        ...prev,
+        [category]: data.folders || [],
+      }))
+    } catch (error) {
+      console.error("Error fetching folders:", error)
+      toast.error("Failed to load folders")
+    }
+  }, [])
+
+  // Fetch folders when category is opened
+  React.useEffect(() => {
+    items.forEach((item) => {
+      if (["Notes", "Journals", "Kanbans"].includes(item.title) && openItems.has(item.title)) {
+        fetchFolders(item.title as CategoryType)
+      }
+    })
+  }, [openItems, items, fetchFolders])
+
+  // Handle folder creation
+  const handleFolderCreate = React.useCallback(async (payload: { name: string; emoji?: string; description?: string; parent: CategoryType }) => {
+    try {
+      const res = await (client as any).folders.$post({ json: payload })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Failed to create folder")
+      }
+      
+      // Refresh folders for that category
+      await fetchFolders(payload.parent)
+      toast.success(`${payload.name} created`, {
+        description: "Folder successfully created!",
+      })
+    } catch (error) {
+      throw error // Re-throw to let folder dialog handle the error
+    }
+  }, [fetchFolders])
+
+  // Handle folder update
+  const handleFolderUpdate = React.useCallback(async (payload: { name: string; emoji?: string; description?: string; parent: CategoryType; originalName: string }) => {
+    if (!editingFolder) return
+
+    try {
+      const res = await (client as any).folders[":id"].$put({
+        param: { id: editingFolder.id },
+        json: payload,
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Failed to update folder")
+      }
+      
+      // Refresh folders for that category
+      await fetchFolders(payload.parent)
+      toast.success(`Renamed to "${payload.name}"`)
+      setRenameDialogOpen(false)
+      setEditingFolder(null)
+    } catch (error) {
+      throw error // Re-throw to let folder dialog handle the error
+    }
+  }, [editingFolder, fetchFolders])
+
+  // Handle folder delete
+  const handleFolderDelete = React.useCallback(async (folderId: string, category: CategoryType, folderName: string) => {
+    if (!confirm(`Are you sure you want to delete "${folderName}"? This will also delete all items inside it.`)) {
+      return
+    }
+
+    try {
+      const res = await (client as any).folders[":id"].$delete({
+        param: { id: folderId },
+      })
+      
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Failed to delete folder")
+      }
+      
+      // Refresh folders for that category
+      await fetchFolders(category)
+      toast.success(`"${folderName}" deleted`)
+    } catch (error) {
+      console.error("Error deleting folder:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to delete folder")
+    }
+  }, [fetchFolders])
 
   return (
     <>
@@ -59,9 +173,14 @@ export function NavMain({
           {items.map((item) => {
             const hasSubItems = item.items && item.items.length > 0
             const isFolderable = ["Notes", "Journals", "Kanbans"].includes(item.title)
+            const isOpen = openItems.has(item.title)
 
             return (
-              <Collapsible key={item.title} defaultOpen={item.isActive}>
+              <Collapsible 
+                key={item.title} 
+                open={isOpen}
+                onOpenChange={() => toggleItem(item.title)}
+              >
                 <SidebarMenuItem>
                   {/* Main clickable item */}
                   <SidebarMenuButton asChild tooltip={item.title}>
@@ -71,8 +190,8 @@ export function NavMain({
                     </a>
                   </SidebarMenuButton>
 
-                  {/* Chevron trigger */}
-                  {hasSubItems && (
+                  {/* Chevron trigger - show for folderable categories or items with sub-items */}
+                  {(hasSubItems || isFolderable) && (
                     <CollapsibleTrigger asChild>
                       <SidebarMenuAction className="data-[state=open]:rotate-90 transition-transform duration-200">
                         <ChevronRight />
@@ -82,29 +201,32 @@ export function NavMain({
                   )}
 
                   {/* Subitems */}
-                  {hasSubItems && (
+                  {isOpen && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {/* + New Folder Button */}
+                        {/* + New Folder Button - only for folderable categories */}
                         {isFolderable && (
                           <SidebarMenuSubItem>
                             <SidebarMenuSubButton asChild>
                               <div className="w-full">
-                                <FolderButton parent={item.title as any} />
+                                <FolderDialog 
+                                  parent={item.title as CategoryType}
+                                  onCreate={handleFolderCreate}
+                                />
                               </div>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         )}
 
-                        {/* Sub-item folders */}
-                        {item.items?.map((subItem) => (
+                        {/* Dynamic folders from API */}
+                        {isFolderable && foldersByCategory[item.title as CategoryType]?.map((folderItem) => (
                           <SidebarMenuSubItem
-                            key={subItem.title}
+                            key={folderItem.id}
                             className="group/item"
                           >
                             <SidebarMenuSubButton asChild>
-                              <a href={subItem.url}>
-                                <span>{subItem.title}</span>
+                              <a href={`${item.url}/${folderItem.id}`}>
+                                <span>{folderItem.name}</span>
                               </a>
                             </SidebarMenuSubButton>
 
@@ -125,8 +247,9 @@ export function NavMain({
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setEditingFolder({
-                                      name: subItem.title,
-                                      parent: item.title as any,
+                                      id: folderItem.id,
+                                      name: folderItem.name,
+                                      parent: item.title as CategoryType,
                                     })
                                     setRenameDialogOpen(true)
                                   }}
@@ -139,9 +262,7 @@ export function NavMain({
 
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    toast.warning(
-                                      `Deleting "${subItem.title}" (confirm later)`
-                                    )
+                                    handleFolderDelete(folderItem.id, item.title as CategoryType, folderItem.name)
                                   }
                                   className="text-destructive focus:text-destructive"
                                 >
@@ -150,6 +271,20 @@ export function NavMain({
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
+                          </SidebarMenuSubItem>
+                        ))}
+
+                        {/* Fallback: Show hardcoded items for non-folderable categories */}
+                        {!isFolderable && item.items?.map((subItem) => (
+                          <SidebarMenuSubItem
+                            key={subItem.title}
+                            className="group/item"
+                          >
+                            <SidebarMenuSubButton asChild>
+                              <a href={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </a>
+                            </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>
@@ -172,11 +307,7 @@ export function NavMain({
           }}
           open={renameDialogOpen}
           onOpenChange={setRenameDialogOpen}
-          onUpdate={(data) => {
-            toast.success(`Renamed to "${data.name}"`)
-            setRenameDialogOpen(false)
-            setEditingFolder(null)
-          }}
+          onUpdate={handleFolderUpdate}
         />
       )}
     </>

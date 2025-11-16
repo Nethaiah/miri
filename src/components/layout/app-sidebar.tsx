@@ -21,10 +21,8 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { client } from "@/lib/api-client"
 
 import localFont from "next/font/local";
 
@@ -144,60 +142,80 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [user, setUser] = React.useState<{
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user?: {
     name: string
     email: string
     avatar?: string
-  } | null>(null)
+  } | null
+}
 
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await (client as any).session.$get()
-        if (response.ok) {
-          const data = await response.json()
-          if (data.user) {
-            setUser({
-              name: data.user.name || data.user.email || "User",
-              email: data.user.email || "",
-              avatar: data.user.image || data.user.avatar || undefined,
-            })
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch user session:", error)
+// Create a context to persist nav state across navigations
+const NavStateContext = React.createContext<{
+  openItems: Set<string>
+  toggleItem: (title: string) => void
+} | null>(null)
+
+export function useNavState() {
+  const context = React.useContext(NavStateContext)
+  if (!context) {
+    throw new Error('useNavState must be used within NavStateProvider')
+  }
+  return context
+}
+
+function NavStateProvider({ children }: { children: React.ReactNode }) {
+  const [openItems, setOpenItems] = React.useState<Set<string>>(() => {
+    // Initialize with Dashboard open by default
+    return new Set(['Dashboard'])
+  })
+
+  const toggleItem = React.useCallback((title: string) => {
+    setOpenItems(prev => {
+      // If the item is already open, close it
+      if (prev.has(title)) {
+        return new Set()
       }
-    }
-
-    fetchUser()
+      // Otherwise, close all items and open only this one
+      return new Set([title])
+    })
   }, [])
 
   return (
-    <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div 
-              data-slot="sidebar-menu-button"
-              data-sidebar="menu-button"
-              data-size="lg"
-              className={`peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden h-12 group-data-[collapsible=icon]:p-0! [&>span:last-child]:truncate`}
-            >
-              <div className={`grid flex-1 text-left text-xl leading-tight ${oughter.className}`}>
-                MiriNote
+    <NavStateContext.Provider value={{ openItems, toggleItem }}>
+      {children}
+    </NavStateContext.Provider>
+  )
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  return (
+    <NavStateProvider>
+      <Sidebar variant="inset" {...props}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div 
+                data-slot="sidebar-menu-button"
+                data-sidebar="menu-button"
+                data-size="lg"
+                className={`peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden h-12 group-data-[collapsible=icon]:p-0! [&>span:last-child]:truncate`}
+              >
+                <div className={`grid flex-1 text-left text-xl leading-tight ${oughter.className}`}>
+                  MiriNote
+                </div>
               </div>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-      </SidebarContent>
-      <SidebarFooter>
-        {user && <NavUser user={user} />}
-      </SidebarFooter>
-    </Sidebar>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <NavMain items={data.navMain} />
+          <NavProjects projects={data.projects} />
+        </SidebarContent>
+        <SidebarFooter>
+          {user && <NavUser user={user} />}
+        </SidebarFooter>
+      </Sidebar>
+    </NavStateProvider>
   )
 }

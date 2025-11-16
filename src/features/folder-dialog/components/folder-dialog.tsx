@@ -32,13 +32,20 @@ import {
 } from "@/components/ui/emoji-picker"
 
 import { FOLDER_PRESETS } from "@/features/folder-dialog/lib/folder-presets"
-import { folderSchema, type FolderFormData } from "@/features/folder-dialog/schema/zod-schema"
+import { 
+  folderSchema, 
+  type FolderFormData,
+  type FolderWithParentData,
+  type CategoryType,
+} from "@/features/folder-dialog/schema/zod-schema"
+import { extractEmoji, removeEmojis, prependEmoji } from "@/features/folder-dialog/lib/emoji-utils"
+import { client } from "@/lib/api-client"
 
 type Props = {
-  parent: "Notes" | "Journals" | "Kanbans"
-  onCreate?: (payload: FolderFormData & { parent: string }) => void
-  onUpdate?: (payload: FolderFormData & { parent: string; originalName: string }) => void
-  initialData?: { name: string; parent: string }
+  parent: CategoryType
+  onCreate?: (payload: FolderWithParentData) => void | Promise<void>
+  onUpdate?: (payload: FolderWithParentData & { originalName: string }) => void | Promise<void>
+  initialData?: { name: string; parent: CategoryType }
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -52,6 +59,7 @@ export function FolderDialog({
   onOpenChange
 }: Props) {
   const [internalOpen, setInternalOpen] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
   
   // Use controlled open if provided, otherwise use internal state
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -67,10 +75,7 @@ export function FolderDialog({
   // Prefill form when initialData changes (edit mode)
   React.useEffect(() => {
     if (initialData && open) {
-      // Extract emoji from name if present
-      const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
-      const emojis = initialData.name.match(emojiRegex)
-      const emoji = emojis?.[0] || ""
+      const emoji = extractEmoji(initialData.name)
       
       form.reset({
         name: initialData.name,
@@ -83,39 +88,80 @@ export function FolderDialog({
     }
   }, [initialData, open, form])
 
-  const handleSubmit = (data: FolderFormData) => {
-    const payload = { ...data, parent }
+  const handleSubmit = async (data: FolderFormData) => {
+    setIsSubmitting(true)
+    
+    try {
+      const payload: FolderWithParentData = { ...data, parent }
 
-    if (isEditMode && onUpdate && initialData) {
-      toast.success(`${data.name} updated`, {
-        description: data.description || "Folder successfully updated!",
+      if (isEditMode && initialData) {
+        // Update existing folder via API
+        // Find folder ID from the folder name - we'll need to pass it from parent
+        // For now, use the onUpdate callback if provided, otherwise call API directly
+        if (onUpdate) {
+          await onUpdate({ ...payload, originalName: initialData.name })
+        } else {
+          // If no onUpdate callback, we need the folder ID
+          // This will be handled by the parent component
+          toast.error("Update requires folder ID")
+          return
+        }
+        toast.success(`${data.name} updated`, {
+          description: data.description || "Folder successfully updated!",
+        })
+      } else {
+        // Create new folder via API
+        if (onCreate) {
+          await onCreate(payload)
+        } else {
+          const res = await (client as any).folders.$post({ json: payload })
+          
+          if (!res.ok) {
+            const error = await res.json()
+            throw new Error(error.error || "Failed to create folder")
+          }
+          
+          const result = await res.json()
+          toast.success(`${data.name} created under ${parent}`, {
+            description: data.description || "Folder successfully created!",
+          })
+        }
+      }
+
+      setOpen(false)
+      form.reset()
+    } catch (error) {
+      toast.error("Something went wrong", {
+        description: error instanceof Error ? error.message : "Please try again later"
       })
-      onUpdate({ ...payload, originalName: initialData.name })
-    } else {
-      toast.success(`${data.name} created under ${parent}`, {
-        description: data.description || "Folder successfully created!",
-      })
-      onCreate?.(payload)
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setOpen(false)
-    form.reset()
   }
 
-  // handle emoji selection → inject into name input
+  // Handle emoji selection → inject into name input
   const handleEmojiSelect = (emoji: string) => {
     const currentName = form.getValues("name")
     form.setValue("emoji", emoji)
     
-    // Remove any existing emojis from the name first
-    const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
-    const nameWithoutEmojis = currentName.replace(emojiRegex, '').trim()
-    
-    // Add the new emoji at the start
-    form.setValue("name", `${emoji} ${nameWithoutEmojis}`)
+    // Use the utility function to prepend emoji
+    form.setValue("name", prependEmoji(currentName, emoji))
     
     // Trigger validation
     form.trigger("name")
+  }
+
+  // Handle dialog close with unsaved changes confirmation
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && form.formState.isDirty && !isSubmitting) {
+      const confirmed = window.confirm(
+        "You have unsaved changes. Are you sure you want to close?"
+      )
+      if (!confirmed) {
+        return
+      }
+    }
+    setOpen(newOpen)
   }
 
   const presets = FOLDER_PRESETS[parent] || []
@@ -136,7 +182,7 @@ export function FolderDialog({
     : `Complete the form below to create a new ${parent === "Kanbans" ? "board" : "folder"} under ${parent}.`
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {!isEditMode && (
         <DialogTrigger asChild className="w-full justify-start text-sm h-8 px-2">
           <div className="w-full">
@@ -185,6 +231,7 @@ export function FolderDialog({
                       form.trigger("name")
                     }}
                     className="flex items-center justify-start gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                    disabled={isSubmitting}
                   >
                     <span>{preset.emoji}</span>
                     <span>{preset.name}</span>
@@ -203,7 +250,11 @@ export function FolderDialog({
                   <div className="flex items-center gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={isSubmitting}
+                        >
                           {form.watch("emoji") || "🙂"}
                         </Button>
                       </PopoverTrigger>
@@ -222,13 +273,13 @@ export function FolderDialog({
                     <Input 
                       {...field} 
                       placeholder="e.g. Personal 💡"
+                      disabled={isSubmitting}
                       onChange={(e) => {
                         field.onChange(e)
-                        // Update emoji field based on name content
-                        const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\uFE0F]/gu
-                        const emojis = e.target.value.match(emojiRegex)
-                        if (emojis && emojis.length > 0) {
-                          form.setValue("emoji", emojis[0])
+                        // Update emoji field based on name content using utility
+                        const emoji = extractEmoji(e.target.value)
+                        if (emoji) {
+                          form.setValue("emoji", emoji)
                         }
                       }}
                     />
@@ -245,7 +296,11 @@ export function FolderDialog({
               render={({ field }) => (
                 <Field>
                   <FieldLabel>Description (optional)</FieldLabel>
-                  <Textarea {...field} placeholder="Optional folder description..." />
+                  <Textarea 
+                    {...field} 
+                    placeholder="Optional folder description..."
+                    disabled={isSubmitting}
+                  />
                 </Field>
               )}
             />
@@ -260,11 +315,20 @@ export function FolderDialog({
                   form.reset()
                   setOpen(false)
                 }}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEditMode ? "Update" : "Create"}
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting 
+                  ? "Saving..." 
+                  : isEditMode 
+                    ? "Update" 
+                    : "Create"
+                }
               </Button>
             </div>
           </DialogFooter>

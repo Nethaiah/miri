@@ -3,9 +3,10 @@
 
 import * as React from "react"
 import { FolderDialog } from "@/features/folder-dialog/components/folder-dialog"
+import type { CategoryType } from "@/features/folder-dialog/schema/zod-schema"
 
 type Props = {
-  parent: "Notes" | "Journals" | "Kanbans"
+  parent: CategoryType
 }
 
 export function FolderButton({ parent }: Props) {

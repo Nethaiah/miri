@@ -26,7 +26,7 @@ interface BreadcrumbItem {
 interface MainLayoutProps {
   breadcrumbItems?: BreadcrumbItem[]
   children: ReactNode
-  requireAuth?: boolean // Optional: some pages might not need auth
+  requireAuth?: boolean
 }
 
 export default async function MainLayout({ 
@@ -35,6 +35,7 @@ export default async function MainLayout({
   requireAuth = true 
 }: MainLayoutProps) {
   // Handle authentication if required
+  let user = null
   if (requireAuth) {
     const session = await auth.api.getSession({
       headers: await headers()
@@ -43,11 +44,20 @@ export default async function MainLayout({
     if (!session) {
       redirect("/sign-in")
     }
+
+    // Extract user data from session
+    if (session.user) {
+      user = {
+        name: session.user.name || session.user.email || "User",
+        email: session.user.email || "",
+        avatar: session.user.image || undefined,
+      }
+    }
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2">

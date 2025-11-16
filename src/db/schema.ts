@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -59,3 +59,32 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+// Category types: Notes, Journals, Kanbans
+export type CategoryType = "Notes" | "Journals" | "Kanbans";
+
+// Folder schema - represents folders within each category
+export const folder = pgTable("folder", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  category: text("category").notNull(), // "Notes" | "Journals" | "Kanbans"
+  name: text("name").notNull(), // e.g., "💡 Personal" or "Personal"
+  emoji: text("emoji"), // Extracted emoji if present
+  description: text("description"), // Optional description
+  order: integer("order").default(0).notNull(), // For custom sorting
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}, (table) => ({
+  userIdIdx: index("folder_user_id_idx").on(table.userId),
+  categoryIdx: index("folder_category_idx").on(table.category),
+  userIdCategoryIdx: index("folder_user_category_idx").on(table.userId, table.category),
+}));
+
+// TypeScript types inferred from schema
+export type Folder = typeof folder.$inferSelect
+export type NewFolder = typeof folder.$inferInsert
