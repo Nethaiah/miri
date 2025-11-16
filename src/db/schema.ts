@@ -79,11 +79,11 @@ export const folder = pgTable("folder", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-}, (table) => ({
-  userIdIdx: index("folder_user_id_idx").on(table.userId),
-  categoryIdx: index("folder_category_idx").on(table.category),
-  userIdCategoryIdx: index("folder_user_category_idx").on(table.userId, table.category),
-}));
+}, (table) => [
+  index("folder_user_id_idx").on(table.userId),
+  index("folder_category_idx").on(table.category),
+  index("folder_user_category_idx").on(table.userId, table.category),
+]);
 
 // TypeScript types inferred from schema
 export type Folder = typeof folder.$inferSelect

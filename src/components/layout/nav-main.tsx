@@ -34,6 +34,16 @@ import { useNavState } from "@/components/layout/app-sidebar"
 import type { CategoryType } from "@/features/folder-dialog/schema/zod-schema"
 import { client } from "@/lib/api-client"
 import type { Folder } from "@/db/schema"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function NavMain({
   items,
@@ -62,6 +72,14 @@ export function NavMain({
     id: string
     name: string
     parent: CategoryType
+  } | null>(null)
+
+  // delete dialog control
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [folderToDelete, setFolderToDelete] = React.useState<{
+    id: string
+    name: string
+    category: CategoryType
   } | null>(null)
 
   // Fetch folders for a specific category
@@ -141,7 +159,6 @@ export function NavMain({
       
       // Refresh folders for that category
       await fetchFolders(payload.parent)
-      toast.success(`Renamed to "${payload.name}"`)
       setRenameDialogOpen(false)
       setEditingFolder(null)
     } catch (error) {
@@ -149,15 +166,21 @@ export function NavMain({
     }
   }, [editingFolder, fetchFolders])
 
-  // Handle folder delete
-  const handleFolderDelete = React.useCallback(async (folderId: string, category: CategoryType, folderName: string) => {
-    if (!confirm(`Are you sure you want to delete "${folderName}"? This will also delete all items inside it.`)) {
-      return
-    }
+  // Open delete dialog
+  const openDeleteDialog = React.useCallback((folderId: string, category: CategoryType, folderName: string) => {
+    setFolderToDelete({ id: folderId, name: folderName, category })
+    setDeleteDialogOpen(true)
+  }, [])
+
+  // Handle folder delete confirmation
+  const confirmFolderDelete = React.useCallback(async () => {
+    if (!folderToDelete) return
+
+    const { id, name, category } = folderToDelete
 
     try {
       const res = await (client as any).folders[":id"].$delete({
-        param: { id: folderId },
+        param: { id },
       })
       
       if (!res.ok) {
@@ -176,12 +199,16 @@ export function NavMain({
       
       // Refresh folders for that category
       await fetchFolders(category)
-      toast.success(`"${folderName}" deleted`)
+      toast.success(`"${name}" deleted`, {
+        description: "Folder successfully deleted!",
+      })
+      setDeleteDialogOpen(false)
+      setFolderToDelete(null)
     } catch (error) {
       console.error("Error deleting folder:", error)
       toast.error(error instanceof Error ? error.message : "Failed to delete folder")
     }
-  }, [fetchFolders])
+  }, [folderToDelete, fetchFolders])
 
   return (
     <>
@@ -280,7 +307,7 @@ export function NavMain({
 
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    handleFolderDelete(folderItem.id, item.title as CategoryType, folderItem.name)
+                                    openDeleteDialog(folderItem.id, item.title as CategoryType, folderItem.name)
                                   }
                                   className="text-destructive focus:text-destructive"
                                 >
@@ -328,6 +355,28 @@ export function NavMain({
           onUpdate={handleFolderUpdate}
         />
       )}
+
+      {/* 🗑️ Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Folder</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>"{folderToDelete?.name}"</strong>? 
+              This action cannot be undone and will permanently delete this folder.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmFolderDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

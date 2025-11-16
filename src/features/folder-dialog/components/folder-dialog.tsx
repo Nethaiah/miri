@@ -107,7 +107,7 @@ export function FolderDialog({
           return
         }
         toast.success(`${data.name} updated`, {
-          description: data.description || "Folder successfully updated!",
+          description: "Folder successfully updated!",
         })
       } else {
         // Create new folder via API
@@ -123,7 +123,7 @@ export function FolderDialog({
           
           const result = await res.json()
           toast.success(`${data.name} created under ${parent}`, {
-            description: data.description || "Folder successfully created!",
+            description: "Folder successfully created!",
           })
         }
       }
