@@ -126,8 +126,17 @@ export function NavMain({
       })
       
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || "Failed to update folder")
+        const contentType = res.headers.get("content-type")
+        let errorMessage = "Failed to update folder"
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await res.json()
+            errorMessage = error.error || errorMessage
+          } catch {
+            // If JSON parsing fails, use default message
+          }
+        }
+        throw new Error(errorMessage)
       }
       
       // Refresh folders for that category
@@ -152,8 +161,17 @@ export function NavMain({
       })
       
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || "Failed to delete folder")
+        const contentType = res.headers.get("content-type")
+        let errorMessage = "Failed to delete folder"
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await res.json()
+            errorMessage = error.error || errorMessage
+          } catch {
+            // If JSON parsing fails, use default message
+          }
+        }
+        throw new Error(errorMessage)
       }
       
       // Refresh folders for that category

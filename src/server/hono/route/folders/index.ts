@@ -5,7 +5,7 @@ import { db } from "@/index";
 import { folder } from "@/db/schema";
 import { folderWithParentSchema } from "@/features/folder-dialog/schema/zod-schema";
 import { eq, and, desc } from "drizzle-orm";
-import { extractEmoji } from "@/features/folder-dialog/lib/emoji-utils";
+import { extractEmoji, removeEmojis } from "@/features/folder-dialog/lib/emoji-utils";
 import { auth } from "@/lib/auth";
 
 type Variables = {
@@ -81,6 +81,23 @@ folders.post("/", zValidator("json", folderWithParentSchema), async (c) => {
     const data = c.req.valid("json");
     const { name, emoji, description, parent } = data;
 
+    // Check for duplicate folder name in the same category (case-insensitive, ignoring emojis)
+    const existingFolders = await db
+      .select()
+      .from(folder)
+      .where(and(eq(folder.userId, user.id), eq(folder.category, parent)));
+
+    const nameWithoutEmoji = removeEmojis(name).trim().toLowerCase();
+    const duplicate = existingFolders.find((f) => 
+      removeEmojis(f.name).trim().toLowerCase() === nameWithoutEmoji
+    );
+
+    if (duplicate) {
+      return c.json({ 
+        error: "A folder with this name already exists in this category" 
+      }, 400);
+    }
+
     // Extract emoji from name if not provided
     const extractedEmoji = emoji || extractEmoji(name) || null;
 
@@ -142,6 +159,25 @@ folders.put("/:id", zValidator("json", z.object({
 
     if (!existingFolder) {
       return c.json({ error: "Folder not found" }, 404);
+    }
+
+    // Check for duplicate folder name if name is being updated
+    if (data.name !== undefined && data.name !== existingFolder.name) {
+      const existingFolders = await db
+        .select()
+        .from(folder)
+        .where(and(eq(folder.userId, user.id), eq(folder.category, data.parent || existingFolder.category)));
+
+      const nameWithoutEmoji = removeEmojis(data.name).trim().toLowerCase();
+      const duplicate = existingFolders.find((f) => 
+        f.id !== id && removeEmojis(f.name).trim().toLowerCase() === nameWithoutEmoji
+      );
+
+      if (duplicate) {
+        return c.json({ 
+          error: "A folder with this name already exists in this category" 
+        }, 400);
+      }
     }
 
     // Prepare update data
