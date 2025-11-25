@@ -10,10 +10,6 @@ export const folderSchema = z.object({
     .string()
     .max(500, "Description must be 500 characters or less")
     .optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-F]{6}$/i, "Invalid color format")
-    .optional(),
 })
 
 export type FolderFormData = z.infer<typeof folderSchema>

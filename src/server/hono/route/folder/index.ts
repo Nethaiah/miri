@@ -70,7 +70,7 @@ folders.post("/", zValidator("json", folderSchema), async (c) => {
     }
 
     const data = c.req.valid("json");
-    const { name, description, color } = data;
+    const { name, description } = data;
 
     // Check for duplicate folder name (case-insensitive)
     const existingFolders = await db
@@ -109,7 +109,6 @@ folders.post("/", zValidator("json", folderSchema), async (c) => {
         userId: user.id,
         name,
         description: description || null,
-        color: color || null,
         order: newOrder,
       })
       .returning();
@@ -125,7 +124,6 @@ folders.post("/", zValidator("json", folderSchema), async (c) => {
 folders.put("/:id", zValidator("json", z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional().nullable(),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i).optional().nullable(),
 }).passthrough()), async (c) => {
   try {
     const user = c.get("user");
@@ -175,10 +173,6 @@ folders.put("/:id", zValidator("json", z.object({
 
     if (data.description !== undefined) {
       updateData.description = data.description || null;
-    }
-
-    if (data.color !== undefined) {
-      updateData.color = data.color || null;
     }
 
     const [updatedFolder] = await db

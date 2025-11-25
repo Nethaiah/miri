@@ -30,7 +30,7 @@ import {
 type Props = {
   onCreate?: (payload: FolderFormData) => void | Promise<void>
   onUpdate?: (payload: FolderFormData & { originalName: string }) => void | Promise<void>
-  initialData?: { name: string; description?: string; color?: string }
+  initialData?: { name: string; description?: string }
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -53,7 +53,7 @@ export function FolderDialog({
 
   const form = useForm<FolderFormData>({
     resolver: zodResolver(folderSchema),
-    defaultValues: { name: "", description: "", color: "" },
+    defaultValues: { name: "", description: "" },
   })
 
   // Prefill form when initialData changes (edit mode)
@@ -62,11 +62,10 @@ export function FolderDialog({
       form.reset({
         name: initialData.name,
         description: initialData.description || "",
-        color: initialData.color || ""
       })
     } else if (!open) {
       // Reset form when dialog closes
-      form.reset({ name: "", description: "", color: "" })
+      form.reset({ name: "", description: "" })
     }
   }, [initialData, open, form])
 
@@ -168,32 +167,6 @@ export function FolderDialog({
                     placeholder="Optional folder description..."
                     disabled={isSubmitting}
                   />
-                  {fieldState.error && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-
-            {/* Color Picker (optional) */}
-            <Controller
-              name="color"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={!!fieldState.error}>
-                  <FieldLabel>Color (optional)</FieldLabel>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      {...field}
-                      disabled={isSubmitting}
-                      className="h-10 w-16 rounded border cursor-pointer"
-                    />
-                    <Input 
-                      {...field}
-                      placeholder="#3B82F6"
-                      disabled={isSubmitting}
-                      className="flex-1"
-                    />
-                  </div>
                   {fieldState.error && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
