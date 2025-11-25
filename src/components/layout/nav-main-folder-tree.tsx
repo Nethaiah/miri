@@ -177,7 +177,7 @@ export function FolderTree({
                 <div className="relative">
                   {folderNotes.length === 0 ? (
                     <div className="flex items-center gap-2 py-1 pl-[42px] pr-2 text-sm text-muted-foreground/50 select-none">
-                       <span>No pages inside</span>
+                      <span>No pages inside</span>
                     </div>
                   ) : (
                     <div className="flex flex-col">

@@ -226,7 +226,7 @@ export function NavMain({
       const res = await (client as any).folders.$post({ json: payload })
       if (!res.ok) throw new Error("Failed to create folder")
       await fetchFolders()
-      toast.success(`${payload.name} created`)
+      toast.success(`Folder "${payload.name}" created`)
       setAddDialogOpen(false)
     } catch (error) {
       throw error
@@ -261,7 +261,7 @@ export function NavMain({
       const res = await (client as any).folders[":id"].$delete({ param: { id } })
       if (!res.ok) throw new Error("Failed to delete folder")
       await fetchFolders()
-      toast.success(`"${name}" deleted`)
+      toast.success(`Folder "${name}" deleted`)
       setDeleteDialogOpen(false)
       setFolderToDelete(null)
     } catch (error) {
@@ -302,7 +302,7 @@ export function NavMain({
           return { ...prev, [folderId]: existing.filter((n) => n.id !== noteId) }
         })
         if (pathname === `/note/${noteId}`) router.push("/dashboard")
-        toast.success(`"${noteTitle || "Note"}" deleted`)
+        toast.success(`Note "${noteTitle || "Note"}" deleted`)
       } catch (error) {
         console.error("Error deleting note:", error)
         toast.error("Failed to delete note")
@@ -347,7 +347,7 @@ export function NavMain({
           return { ...prev, [folderId]: [duplicatedNote!, ...existing] }
         })
         router.push(`/note/${duplicatedNote.id}`)
-        toast.success("Note duplicated")
+        toast.success(`Note "${sourceNote.title}" duplicated`)
       } catch (error) {
         console.error("Error duplicating note:", error)
         toast.error("Failed to duplicate note")

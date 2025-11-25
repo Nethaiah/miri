@@ -86,9 +86,9 @@ export function FolderDialog({
         if (onCreate) {
           await onCreate(data)
         }
-        toast.success(`${data.name} created`, {
-          description: "Folder successfully created!",
-        })
+        // toast.success(`${data.name} created`, {
+        //   description: "Folder successfully created!",
+        // })
       }
 
       setOpen(false)
