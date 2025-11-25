@@ -16,7 +16,7 @@ export type {
 export type {
   FolderFormData,
   FolderWithParentData,
-} from "@/features/folder-dialog/schema/zod-schema"
+} from "@/features/folder-dialog/schema/folder-schema"
 
 /**
  * Folder with nested items count (useful for UI display)

@@ -60,20 +60,16 @@ export const verification = pgTable("verification", {
     .notNull(),
 });
 
-// Category types: Notes, Journals, Kanbans
-export type CategoryType = "Notes" | "Journals" | "Kanbans";
-
-// Folder schema - represents folders within each category
+// Simplified Folder schema - no categories, just folders
 export const folder = pgTable("folder", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  category: text("category").notNull(), // "Notes" | "Journals" | "Kanbans"
-  name: text("name").notNull(), // e.g., "💡 Personal" or "Personal"
-  emoji: text("emoji"), // Extracted emoji if present
-  description: text("description"), // Optional description
-  order: integer("order").default(0).notNull(), // For custom sorting
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color"), // Optional color for folder
+  order: integer("order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -81,10 +77,33 @@ export const folder = pgTable("folder", {
     .notNull(),
 }, (table) => [
   index("folder_user_id_idx").on(table.userId),
-  index("folder_category_idx").on(table.category),
-  index("folder_user_category_idx").on(table.userId, table.category),
+  index("folder_user_order_idx").on(table.userId, table.order),
 ]);
 
 // TypeScript types inferred from schema
 export type Folder = typeof folder.$inferSelect
 export type NewFolder = typeof folder.$inferInsert
+
+export const note = pgTable("note", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  folderId: text("folder_id")
+    .notNull()
+    .references(() => folder.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}, (table) => [
+  index("note_user_id_idx").on(table.userId),
+  index("note_folder_id_idx").on(table.folderId),
+]);
+
+export type Note = typeof note.$inferSelect
+export type NewNote = typeof note.$inferInsert

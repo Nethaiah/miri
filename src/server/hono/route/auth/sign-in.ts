@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { auth } from "@/lib/auth";
 import { zValidator } from "@hono/zod-validator";
-import { signinSchema } from "@/features/auth/sign-in/schema/zod-schema"
+import { signinSchema } from "@/features/auth/sign-in/schema/sign-in-schema"
 
 const signin = new Hono();
 

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { signupSchema, SignupFormData } from "@/features/auth/sign-up/schema/zod-schema"
+import { signupSchema, SignupFormData } from "@/features/auth/sign-up/schema/sign-up-schema"
 import { client } from "@/lib/api-client"
 
 export function SignupForm({

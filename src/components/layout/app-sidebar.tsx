@@ -2,14 +2,9 @@
 
 import * as React from "react"
 import {
-  SquareKanban,
-  BookHeart,
-  Frame,
-  Map,
-  PieChart,
-  Settings2,
-  NotepadText,
+  FolderOpen,
   LayoutDashboard,
+  Settings2,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -39,105 +34,15 @@ const data = {
       isActive: true,
     },
     {
-      title: "Notes",
-      url: "/notes",
-      icon: NotepadText,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Journals",
-      url: "/journals",
-      icon: BookHeart,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Kanbans",
-      url: "/kanbans",
-      icon: SquareKanban,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      title: "Folders",
+      url: "/folders",
+      icon: FolderOpen,
+      isFolderable: true,
     },
     {
       title: "Settings",
       url: "/settings",
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 }
@@ -210,7 +115,6 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         </SidebarHeader>
         <SidebarContent>
           <NavMain items={data.navMain} />
-          <NavProjects projects={data.projects} />
         </SidebarContent>
         <SidebarFooter>
           {user && <NavUser user={user} />}

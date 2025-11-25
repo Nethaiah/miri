@@ -6,7 +6,8 @@ import signup from "./route/auth/sign-up";
 import signin from "./route/auth/sign-in"
 import signout from "./route/auth/sign-out"
 import socialAuth from "./route/auth/google";
-import folders from "./route/folders";
+import folders from "./route/folder";
+import notes from "./route/note";
 
 const app = new Hono<{
   Variables: {
@@ -73,6 +74,9 @@ app.route("/auth", authRoutes);
 
 // folders routes
 app.route("/folders", folders);
+
+// notes routes
+app.route("/notes", notes);
 
 // better auth mount handler
 app.on(["POST", "GET"], "/auth/*", (c) => {
