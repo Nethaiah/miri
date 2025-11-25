@@ -306,7 +306,7 @@ function ActionMenuContent({
                 className="text-muted-foreground focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
             >
                 <Trash2 className="mr-2 h-4 w-4" />
-                <span>Move to Trash</span>
+                <span>Delete</span>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

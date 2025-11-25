@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner"
 import { client } from "@/lib/api-client"
 import type { Folder, Note } from "@/db/schema"
+import { subscribeNoteUpdated } from "@/lib/note-events"
 
 import {
   AlertDialog,
@@ -77,6 +78,12 @@ export function NavMain({
   const [folderToDelete, setFolderToDelete] = React.useState<{
     id: string
     name: string
+  } | null>(null)
+  const [noteDeleteDialogOpen, setNoteDeleteDialogOpen] = React.useState(false)
+  const [noteToDelete, setNoteToDelete] = React.useState<{
+    id: string
+    folderId: string
+    title?: string | null
   } | null>(null)
 
   const router = useRouter()
@@ -170,6 +177,50 @@ export function NavMain({
     void fetchFolders()
   }, [fetchFolders])
 
+  React.useEffect(() => {
+    const unsubscribe = subscribeNoteUpdated((payload) => {
+      setNotesByFolder((prev) => {
+        const next: Record<string, Note[]> = { ...prev }
+        let changed = false
+
+        for (const folderId of Object.keys(next)) {
+          const notes = next[folderId]
+          const index = notes.findIndex((note) => note.id === payload.id)
+          if (index !== -1) {
+            const updatedNote: Note = {
+              ...notes[index],
+              title:
+                payload.title !== undefined
+                  ? payload.title
+                  : notes[index].title,
+              description:
+                payload.description !== undefined
+                  ? payload.description
+                  : notes[index].description,
+              content:
+                payload.content !== undefined
+                  ? payload.content
+                  : notes[index].content,
+            }
+            next[folderId] = [
+              ...notes.slice(0, index),
+              updatedNote,
+              ...notes.slice(index + 1),
+            ]
+            changed = true
+            break
+          }
+        }
+
+        return changed ? next : prev
+      })
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
   const handleFolderCreate = React.useCallback(async (payload: { name: string; emoji?: string; description?: string }) => {
     try {
       const res = await (client as any).folders.$post({ json: payload })
@@ -259,6 +310,22 @@ export function NavMain({
     },
     [pathname, router]
   )
+
+  const openNoteDeleteDialog = React.useCallback(
+    (folderId: string, noteId: string, noteTitle?: string | null) => {
+      setNoteToDelete({ id: noteId, folderId, title: noteTitle })
+      setNoteDeleteDialogOpen(true)
+    },
+    [],
+  )
+
+  const confirmNoteDelete = React.useCallback(async () => {
+    if (!noteToDelete) return
+    const { folderId, id, title } = noteToDelete
+    await handleDeleteNote(folderId, id, title)
+    setNoteDeleteDialogOpen(false)
+    setNoteToDelete(null)
+  }, [noteToDelete, handleDeleteNote])
 
   const handleDuplicateNote = React.useCallback(
     async (folderId: string, sourceNote: Note) => {
@@ -395,7 +462,7 @@ export function NavMain({
             onDeleteFolder={openDeleteDialog}
             onCreateNote={(folderId) => void handleCreateNote(folderId)}
             onOpenNote={(noteId) => router.push(`/note/${noteId}`)}
-            onDeleteNote={handleDeleteNote}
+            onDeleteNote={openNoteDeleteDialog}
             onDuplicateNote={(folderId, note) => void handleDuplicateNote(folderId, note)}
             activeNoteId={activeNoteId}
           />
@@ -431,6 +498,31 @@ export function NavMain({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmFolderDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={noteDeleteDialogOpen} onOpenChange={setNoteDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete
+              {" "}
+              <strong>
+                "{noteToDelete?.title || "Untitled"}"
+              </strong>
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmNoteDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
