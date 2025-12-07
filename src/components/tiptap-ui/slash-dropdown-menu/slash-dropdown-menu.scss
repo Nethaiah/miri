@@ -1,0 +1,217 @@
+// Tippy Overrides - Remove arrow and artifacts
+.tippy-box[data-theme~="slash-menu"] {
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+
+  .tippy-content {
+    background-color: transparent !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  // Hides the "tip" / arrow
+  .tippy-svg-arrow {
+    display: none !important;
+  }
+
+  .tippy-arrow {
+    display: none !important;
+  }
+}
+
+.slash-menu-card {
+  width: 160px; // Slightly narrower
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 4px; // Reduced padding
+
+
+  // Light Mode
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb; // gray-200
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  // Scrollbar styling (Thin)
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
+
+    &:hover {
+      background: #d1d5db;
+    }
+  }
+
+  // Dark Mode
+  .dark & {
+    background-color: #1a1a1a;
+    border: 1px solid #2e2e2e;
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.5),
+      0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+    &::-webkit-scrollbar-thumb {
+      background: #404040;
+    }
+  }
+}
+
+.slash-menu-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px; // Reduced margin
+  padding-bottom: 4px; // Reduced padding
+  border-bottom: 1px solid #f3f4f6;
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .dark & {
+    border-bottom-color: #2e2e2e;
+  }
+}
+
+.slash-menu-group-label {
+  padding: 4px 8px; // Reduced vertical padding
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: capitalize;
+
+  .dark & {
+    color: #a3a3a3;
+  }
+}
+
+.slash-menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.slash-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px; // Reduced gap
+  padding: 4px 8px;
+  min-height: 28px; // Reduced height
+  text-align: left;
+  border-radius: 4px; // Smaller radius for items
+  transition: background-color 100ms ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  outline: none;
+
+  // Selected State
+  &[data-selected="true"] {
+    background-color: #f3f4f6;
+    color: #111827;
+
+    .dark & {
+      background-color: #2e2e2e;
+      color: #fff;
+    }
+  }
+
+  // Hover State
+  &:hover {
+    background-color: #f3f4f6;
+
+    .dark & {
+      background-color: #2e2e2e;
+    }
+  }
+}
+
+// Icon Wrapper
+.slash-menu-icon {
+  width: 16px; // Fixed square size for alignment
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+
+  // Optional: Add a subtle border/background to icons like Notion does for some
+  // background: white;
+  // border: 1px solid #e5e7eb;
+  // border-radius: 3px;
+
+  .dark & {
+    color: #9ca3af;
+    // background: transparent;
+    // border-color: #404040;
+  }
+}
+
+// Text Icons (H1, H2, etc)
+.slash-menu-icon-text {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-serif, Georgia, serif;
+  font-size: 12px; // Smaller font for H1/H2 icon
+  font-weight: 500;
+  color: #4b5563;
+
+  .dark & {
+    color: #9ca3af;
+  }
+}
+
+.slash-menu-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.slash-menu-title {
+  font-size: 13px; // Reduced from 14px
+  font-weight: 400;
+  color: #1f2937;
+  line-height: 1.2;
+
+  .dark & {
+    color: #e5e7eb;
+  }
+}
+
+.slash-menu-subtext {
+  font-size: 11px; // Reduced from 12px
+  color: #9ca3af;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .dark & {
+    color: #6b7280;
+  }
+}

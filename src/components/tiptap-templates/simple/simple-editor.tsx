@@ -70,6 +70,11 @@ import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 
+// --- Slash Command ---
+import { SlashCommand } from "@/components/tiptap-node/slash-command/slash-command-extension"
+import { createSlashMenuSuggestion } from "@/components/tiptap-ui/slash-dropdown-menu"
+import "tippy.js/dist/tippy.css"
+
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
@@ -225,6 +230,9 @@ export function SimpleEditor({ initialContent, onContentChange }: SimpleEditorPr
         limit: 3,
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
+      }),
+      SlashCommand.configure({
+        suggestion: createSlashMenuSuggestion(),
       }),
     ],
     content: initialContent ?? content,
