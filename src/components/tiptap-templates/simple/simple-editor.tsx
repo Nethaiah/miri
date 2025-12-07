@@ -12,6 +12,7 @@ import { Typography } from "@tiptap/extension-typography"
 import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
+import { Emoji, gitHubEmojis } from "@tiptap/extension-emoji"
 import { Selection } from "@tiptap/extensions"
 
 // --- UI Primitives ---
@@ -53,6 +54,8 @@ import {
 import { MarkButton } from "@/components/tiptap-ui/mark-button"
 import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
 import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
+import { SlashCommandTriggerButton } from "@/components/tiptap-ui/slash-command-trigger-button"
+import { EmojiTriggerButton } from "@/components/tiptap-ui/emoji-trigger-button"
 
 // --- Icons ---
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
@@ -73,6 +76,10 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 // --- Slash Command ---
 import { SlashCommand } from "@/components/tiptap-node/slash-command/slash-command-extension"
 import { createSlashMenuSuggestion } from "@/components/tiptap-ui/slash-dropdown-menu"
+
+// --- Emoji ---
+import { createEmojiSuggestion } from "@/components/tiptap-ui/emoji-dropdown-menu"
+
 import "tippy.js/dist/tippy.css"
 
 // --- Styles ---
@@ -151,6 +158,13 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
+      </ToolbarGroup>
+
+      <ToolbarSeparator />
+
+      <ToolbarGroup>
+        <SlashCommandTriggerButton />
+        <EmojiTriggerButton />
       </ToolbarGroup>
 
       <Spacer />
@@ -233,6 +247,11 @@ export function SimpleEditor({ initialContent, onContentChange }: SimpleEditorPr
       }),
       SlashCommand.configure({
         suggestion: createSlashMenuSuggestion(),
+      }),
+      Emoji.configure({
+        emojis: gitHubEmojis,
+        enableEmoticons: true,
+        suggestion: createEmojiSuggestion(),
       }),
     ],
     content: initialContent ?? content,

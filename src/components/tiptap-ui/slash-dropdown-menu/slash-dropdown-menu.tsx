@@ -178,7 +178,7 @@ export function createSlashMenuSuggestion(config?: SlashMenuConfig) {
             return true;
           }
 
-          if (!component?.ref || !editorRef) {
+          if (!component || !editorRef) {
             return false;
           }
 

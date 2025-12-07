@@ -87,7 +87,7 @@ export function NoteEditor({ id, title, description, content }: NoteEditorProps)
   return (
     <div className="relative w-full flex-1 h-full overflow-hidden flex flex-col bg-background">
       <div className="flex-1 overflow-y-auto w-full scroll-smooth">
-        <div className="mx-auto w-full max-w-[850px] px-6 md:px-12 py-12 pb-32">
+        <div className="mx-auto w-full max-w-[950px] px-6 md:px-12 py-12 pb-32">
           
           {/* 1. Big Title Area */}
           <div className="group relative mb-2">

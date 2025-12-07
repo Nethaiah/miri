@@ -28,6 +28,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.86.2",
+    "@tiptap/extension-emoji": "^3.13.0",
     "@tiptap/extension-highlight": "^3.11.0",
     "@tiptap/extension-horizontal-rule": "^3.11.0",
     "@tiptap/extension-image": "^3.11.0",
