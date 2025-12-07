@@ -369,17 +369,68 @@ export const handleImageUpload = async (
     )
   }
 
-  // For demo/testing: Simulate upload progress. In production, replace the following code
-  // with your own upload implementation.
-  for (let progress = 0; progress <= 100; progress += 10) {
-    if (abortSignal?.aborted) {
-      throw new Error("Upload cancelled")
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onProgress?.({ progress })
-  }
+  return new Promise((resolve, reject) => {
+    const formData = new FormData()
+    formData.append("file", file)
 
-  return "/images/tiptap-ui-placeholder-image.jpg"
+    const xhr = new XMLHttpRequest()
+
+    // Track upload progress
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100)
+        onProgress?.({ progress })
+      }
+    })
+
+    // Handle completion
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText)
+          if (response.url) {
+            resolve(response.url)
+          } else {
+            console.error("No URL in response:", response);
+            reject(new Error("No URL returned from server"))
+          }
+        } catch (error) {
+          console.error("Failed to parse response:", error);
+          reject(new Error("Invalid response from server"))
+        }
+      } else {
+        try {
+          const response = JSON.parse(xhr.responseText)
+          console.error("Upload failed:", response);
+          reject(new Error(response.error || `Upload failed with status ${xhr.status}`))
+        } catch {
+          console.error("Upload failed with status:", xhr.status);
+          reject(new Error(`Upload failed with status ${xhr.status}`))
+        }
+      }
+    })
+
+    // Handle errors
+    xhr.addEventListener("error", () => {
+      console.error("Network error during upload");
+      reject(new Error("Network error during upload"))
+    })
+
+    xhr.addEventListener("abort", () => {
+      reject(new Error("Upload cancelled"))
+    })
+
+    // Handle abort signal
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", () => {
+        xhr.abort()
+      })
+    }
+
+    // Send the request
+    xhr.open("POST", "/api/upload")
+    xhr.send(formData)
+  })
 }
 
 type ProtocolOptions = {

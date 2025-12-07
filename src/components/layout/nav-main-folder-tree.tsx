@@ -186,7 +186,7 @@ export function FolderTree({
                             key={noteItem.id}
                             onClick={() => onOpenNote(noteItem.id)}
                             className={cn(
-                                "group/note-row flex items-center gap-1 rounded-sm py-1 pl-[22px] pr-2 text-sm transition-colors cursor-pointer min-h-[28px]",
+                                "group/note-row flex items-center gap-1 rounded-sm py-1 pl-[42px] pr-2 text-sm transition-colors cursor-pointer min-h-[28px]",
                                 activeNoteId === noteItem.id 
                                 ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
                                 : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-muted-foreground"
@@ -265,6 +265,10 @@ function ActionMenuContent({
             side={isMobile ? "bottom" : "right"}
             align={isMobile ? "end" : "start"}
             alignOffset={-4}
+            onClick={(e) => {
+                // Prevent clicks inside dropdown from bubbling to parent note row
+                e.stopPropagation()
+            }}
         >
             <div className="px-2 py-1.5 text-xs text-muted-foreground truncate border-b mb-1">
                 {title}

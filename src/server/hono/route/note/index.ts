@@ -5,6 +5,7 @@ import { note, folder } from "@/db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { noteCreateSchema, noteUpdateSchema } from "@/features/note/schema/note-schema";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 const notes = new Hono<{
   Variables: {
@@ -77,6 +78,33 @@ notes.post("/", zValidator("json", noteCreateSchema), async (c) => {
   }
 });
 
+const getFilePathsFromContent = (content: string) => {
+  const imageUrlRegex = /src="([^"]*wzfgbpqursfuxzcvxnut\.supabase\.co\/storage\/v1\/object\/public\/images\/[^"]*)"/g;
+  const matches = [...content.matchAll(imageUrlRegex)];
+  
+  return matches.map(match => {
+    const url = match[1];
+    const pathMatch = url.match(/\/images\/(.+)$/);
+    return pathMatch ? pathMatch[1] : null;
+  }).filter((path): path is string => path !== null);
+};
+
+const deleteImagesFromStorage = async (filePaths: string[]) => {
+  if (filePaths.length === 0) return;
+  
+  try {
+    const { error: deleteError } = await supabaseAdmin.storage
+      .from("images")
+      .remove(filePaths);
+
+    if (deleteError) {
+      console.error("Failed to delete images from storage:", deleteError);
+    }
+  } catch (error) {
+    console.error("Error during image cleanup:", error);
+  }
+};
+
 notes.delete("/:id", async (c) => {
   try {
     const user = c.get("user");
@@ -94,6 +122,12 @@ notes.delete("/:id", async (c) => {
 
     if (!existingNote) {
       return c.json({ error: "Note not found" }, 404);
+    }
+
+    // Extract and delete images from Supabase Storage
+    if (existingNote.content) {
+      const filePaths = getFilePathsFromContent(existingNote.content);
+      await deleteImagesFromStorage(filePaths);
     }
 
     await db.delete(note).where(and(eq(note.id, id), eq(note.userId, user.id)));
@@ -149,6 +183,18 @@ notes.put("/:id", zValidator("json", noteUpdateSchema), async (c) => {
 
     if (!existingNote) {
       return c.json({ error: "Note not found" }, 404);
+    }
+
+    // Handle image deletion if content is updated
+    if (data.content !== undefined && existingNote.content) {
+      const oldImages = getFilePathsFromContent(existingNote.content);
+      const newImages = getFilePathsFromContent(data.content || "");
+      
+      const imagesToDelete = oldImages.filter(img => !newImages.includes(img));
+      
+      if (imagesToDelete.length > 0) {
+        await deleteImagesFromStorage(imagesToDelete);
+      }
     }
 
     const updateData: Partial<typeof note.$inferInsert> = {};
