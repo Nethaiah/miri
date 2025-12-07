@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, index, uuid } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -60,9 +60,8 @@ export const verification = pgTable("verification", {
     .notNull(),
 });
 
-// Simplified Folder schema - no categories, just folders
 export const folder = pgTable("folder", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -85,11 +84,11 @@ export type Folder = typeof folder.$inferSelect
 export type NewFolder = typeof folder.$inferInsert
 
 export const note = pgTable("note", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  folderId: text("folder_id")
+  folderId: uuid("folder_id")
     .notNull()
     .references(() => folder.id, { onDelete: "cascade" }),
   title: text("title").notNull(),

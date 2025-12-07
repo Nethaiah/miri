@@ -89,9 +89,6 @@ folders.post("/", zValidator("json", folderSchema), async (c) => {
       }, 400);
     }
 
-    // Generate ID (using crypto.randomUUID() which is built-in)
-    const id = crypto.randomUUID();
-
     // Get the highest order value to append new folder at the end
     const [lastFolder] = await db
       .select({ order: folder.order })
@@ -105,7 +102,6 @@ folders.post("/", zValidator("json", folderSchema), async (c) => {
     const [newFolder] = await db
       .insert(folder)
       .values({
-        id,
         userId: user.id,
         name,
         description: description || null,

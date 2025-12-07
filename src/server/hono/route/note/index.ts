@@ -59,12 +59,9 @@ notes.post("/", zValidator("json", noteCreateSchema), async (c) => {
       return c.json({ error: "Folder not found" }, 404);
     }
 
-    const id = crypto.randomUUID();
-
     const [newNote] = await db
       .insert(note)
       .values({
-        id,
         userId: user.id,
         folderId,
         title: title && title.length > 0 ? title : "New Notes",

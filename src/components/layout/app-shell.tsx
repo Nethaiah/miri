@@ -17,9 +17,13 @@ interface AppShellProps {
 export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname()
 
-  const isAuthRoute = pathname === "/sign-in" || pathname === "/sign-up"
+  // Landing page and auth routes should not have the sidebar
+  const isLandingOrAuthRoute = 
+    pathname === "/" || 
+    pathname === "/sign-in" || 
+    pathname === "/sign-up"
 
-  if (isAuthRoute) {
+  if (isLandingOrAuthRoute) {
     return <>{children}</>
   }
 
