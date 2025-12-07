@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import { toast } from "sonner"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
@@ -56,6 +57,7 @@ import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
 import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 import { SlashCommandTriggerButton } from "@/components/tiptap-ui/slash-command-trigger-button"
 import { EmojiTriggerButton } from "@/components/tiptap-ui/emoji-trigger-button"
+import { CopyToClipboardButton } from "@/components/tiptap-ui/copy-to-clipboard-button"
 
 // --- Icons ---
 import { ArrowLeftIcon } from "@/components/tiptap-icons/arrow-left-icon"
@@ -165,6 +167,10 @@ const MainToolbarContent = ({
       <ToolbarGroup>
         <SlashCommandTriggerButton />
         <EmojiTriggerButton />
+        <CopyToClipboardButton 
+          copyWithFormatting={true} 
+          onCopied={() => toast.success("Copied to clipboard!")}
+        />
       </ToolbarGroup>
 
       <Spacer />

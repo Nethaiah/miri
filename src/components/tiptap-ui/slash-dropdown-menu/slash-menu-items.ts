@@ -41,7 +41,12 @@ export function getSlashMenuItems(
       group: "Write",
       keywords: ["paragraph", "plain", "text"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).setParagraph().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "paragraph" })
+          .run();
       },
     },
     {
@@ -54,7 +59,7 @@ export function getSlashMenuItems(
           .chain()
           .focus()
           .deleteRange(range)
-          .setHeading({ level: 1 })
+          .insertContent({ type: "heading", attrs: { level: 1 } })
           .run();
       },
     },
@@ -68,7 +73,7 @@ export function getSlashMenuItems(
           .chain()
           .focus()
           .deleteRange(range)
-          .setHeading({ level: 2 })
+          .insertContent({ type: "heading", attrs: { level: 2 } })
           .run();
       },
     },
@@ -82,7 +87,7 @@ export function getSlashMenuItems(
           .chain()
           .focus()
           .deleteRange(range)
-          .setHeading({ level: 3 })
+          .insertContent({ type: "heading", attrs: { level: 3 } })
           .run();
       },
     },
@@ -92,7 +97,12 @@ export function getSlashMenuItems(
       group: "Lists",
       keywords: ["unordered", "ul"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).toggleBulletList().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph" }] }] })
+          .run();
       },
     },
     {
@@ -101,7 +111,12 @@ export function getSlashMenuItems(
       group: "Lists",
       keywords: ["ordered", "ol", "1"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "orderedList", content: [{ type: "listItem", content: [{ type: "paragraph" }] }] })
+          .run();
       },
     },
     {
@@ -110,7 +125,12 @@ export function getSlashMenuItems(
       group: "Lists",
       keywords: ["todo", "checkbox", "check"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).toggleTaskList().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "taskList", content: [{ type: "taskItem", content: [{ type: "paragraph" }] }] })
+          .run();
       },
     },
     {
@@ -119,7 +139,12 @@ export function getSlashMenuItems(
       group: "Special",
       keywords: ["quote", "citation"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).setBlockquote().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "blockquote", content: [{ type: "paragraph" }] })
+          .run();
       },
     },
     {
@@ -128,7 +153,12 @@ export function getSlashMenuItems(
       group: "Special",
       keywords: ["code", "programming", "snippet"],
       onSelect: ({ editor, range }: { editor: Editor; range: Range }) => {
-        editor.chain().focus().deleteRange(range).setCodeBlock().run();
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: "codeBlock" })
+          .run();
       },
     },
     {
