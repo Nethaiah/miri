@@ -50,6 +50,7 @@ export function CopyToClipboardButton({
       onClick={() => void handleCopyToClipboard()}
       disabled={!canCopy}
       aria-label={label}
+      tooltip={label}
     >
       <Icon className="tiptap-button-icon" />
       {text && <span className="tiptap-button-text">{text}</span>}

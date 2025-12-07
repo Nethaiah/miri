@@ -55,6 +55,7 @@ export function EmojiTriggerButton({
       onClick={handleAddTrigger}
       disabled={!canAddTrigger}
       aria-label={label}
+      tooltip={label}
     >
       <Icon className="tiptap-button-icon" />
       {text && <span className="tiptap-button-text">{text}</span>}

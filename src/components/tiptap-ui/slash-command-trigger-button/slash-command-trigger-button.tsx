@@ -92,6 +92,7 @@ export const SlashCommandTriggerButton = forwardRef<
         disabled={!canInsert}
         data-disabled={!canInsert}
         aria-label={label}
+        tooltip={label}
         onClick={handleClick}
         {...buttonProps}
         ref={ref}

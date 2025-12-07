@@ -210,7 +210,7 @@ export function useSlashCommandTrigger(
     [handleSlashCommand, editor],
   );
 
-  const label = "Insert slash command";
+  const label = "Insert";
   const shortcutKeys = isMac() ? "Cmd+/" : "Ctrl+/";
 
   return {
