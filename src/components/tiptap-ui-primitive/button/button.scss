@@ -306,9 +306,21 @@
   &:disabled {
     background-color: var(--tt-button-disabled-bg-color);
     color: var(--tt-button-disabled-text-color);
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 
     .tiptap-button-icon {
       color: var(--tt-button-disabled-icon-color);
+    }
+
+    .tiptap-button-icon-sub {
+      color: var(--tt-button-disabled-icon-sub-color);
+    }
+
+    .tiptap-button-dropdown-arrows,
+    .tiptap-button-dropdown-small {
+      color: var(--tt-button-disabled-dropdown-arrows-color);
     }
   }
 }

@@ -101,7 +101,7 @@ export function useMoveNode(config: UseMoveNodeConfig) {
 
   const { editor } = useTiptapEditor(providedEditor)
   const [isVisible, setIsVisible] = useState<boolean>(true)
-  const canMove = canMoveNode(editor, direction)
+  const [canMove, setCanMove] = useState<boolean>(false)
 
   useEffect(() => {
     if (!editor) return
@@ -110,6 +110,7 @@ export function useMoveNode(config: UseMoveNodeConfig) {
       setIsVisible(
         shouldShowButtonUtil({ editor, direction, hideWhenUnavailable })
       )
+      setCanMove(canMoveNode(editor, direction))
     }
 
     handleUpdate()

@@ -97,7 +97,21 @@ export function canMoveNode(
     if (direction === "up") {
       return index > 0
     } else {
-      return index < parent.childCount - 1
+      // Check if we're at the last position
+      if (index >= parent.childCount - 1) return false
+      
+      // Also check if all remaining siblings below are empty nodes
+      // This prevents moving down infinitely into empty paragraphs
+      for (let i = index + 1; i < parent.childCount; i++) {
+        const sibling = parent.child(i)
+        // If we find a non-empty sibling, we can move down
+        if (sibling.textContent.trim() !== "") {
+          return true
+        }
+      }
+      
+      // All siblings below are empty, don't allow moving down
+      return false
     }
   } catch (error) {
     console.error("canMoveNode error:", error)

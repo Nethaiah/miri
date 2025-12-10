@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
-import { auth } from "../../lib/auth"
+import { auth } from "../lib/auth"
 import { logger } from "hono/logger"
 import signup from "./route/auth/sign-up";
 import signin from "./route/auth/sign-in"

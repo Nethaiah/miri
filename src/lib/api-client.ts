@@ -1,5 +1,5 @@
 import { hc } from "hono/client";
-import type { AppType } from "@/server/hono"; // Your Hono app type
+import type { AppType } from "@/hono"; // Your Hono app type
 
 export const client = hc<AppType>(`${process.env.NEXT_PUBLIC_URL}/api`, {
   init: {
