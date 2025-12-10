@@ -55,6 +55,7 @@ import {
 import { MarkButton } from "@/components/tiptap-ui/mark-button"
 import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
 import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
+import { MoveNodeButton } from "@/components/tiptap-ui/move-node-button"
 import { SlashCommandTriggerButton } from "@/components/tiptap-ui/slash-command-trigger-button"
 import { EmojiTriggerButton } from "@/components/tiptap-ui/emoji-trigger-button"
 import { CopyToClipboardButton } from "@/components/tiptap-ui/copy-to-clipboard-button"
@@ -110,6 +111,13 @@ const MainToolbarContent = ({
       <ToolbarGroup>
         <UndoRedoButton action="undo" />
         <UndoRedoButton action="redo" />
+      </ToolbarGroup>
+
+      <ToolbarSeparator />
+
+      <ToolbarGroup>
+        <MoveNodeButton direction="up" />
+        <MoveNodeButton direction="down" />
       </ToolbarGroup>
 
       <ToolbarSeparator />
