@@ -61,19 +61,11 @@ export function SigninForm({
         throw new Error(errorMessage)
       }
 
-      toast.success("Signed in successfully!", {
-        description: `Welcome back, ${data.email}!`,
-        position: "bottom-right",
-      })
+      toast.success("Signed in successfully!")
       
       router.replace("/dashboard")
     } catch (error) {
-      toast.error("Sign in failed", {
-        description: error instanceof Error 
-          ? error.message 
-          : "Failed to sign in",
-        position: "bottom-right",
-      })
+      toast.error(error instanceof Error ? error.message : "Failed to sign in")
     } finally {
       setIsLoading(false)
     }
@@ -103,12 +95,7 @@ export function SigninForm({
         window.location.href = result.data.url
       }
     } catch (error) {
-      toast.error(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login failed`, {
-        description: error instanceof Error 
-          ? error.message 
-          : `Failed to login with ${provider}`,
-        position: "bottom-right",
-      })
+      toast.error(error instanceof Error ? error.message : `Failed to login with ${provider}`)
       setIsSocialLoading(null)
     }
   }

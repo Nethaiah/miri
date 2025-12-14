@@ -78,25 +78,18 @@ export function FolderDialog({
         if (onUpdate) {
           await onUpdate({ ...data, originalName: initialData.name })
         }
-        toast.success(`${data.name} updated`, {
-          description: "Folder successfully updated!",
-        })
+
       } else {
         // Create new folder
         if (onCreate) {
           await onCreate(data)
         }
-        // toast.success(`${data.name} created`, {
-        //   description: "Folder successfully created!",
-        // })
       }
 
       setOpen(false)
       form.reset()
     } catch (error) {
-      toast.error("Something went wrong", {
-        description: error instanceof Error ? error.message : "Please try again later"
-      })
+      toast.error(error instanceof Error ? error.message : "Something went wrong")
     } finally {
       setIsSubmitting(false)
     }

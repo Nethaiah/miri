@@ -53,7 +53,8 @@ export function NoteEditor({ id, title, description, content }: NoteEditorProps)
       })
 
       if (!res.ok) {
-        throw new Error("Failed to save note")
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to save note")
       }
 
       emitNoteUpdated({
@@ -70,7 +71,7 @@ export function NoteEditor({ id, title, description, content }: NoteEditorProps)
       })
     } catch (error) {
       console.error("Auto-save note error:", error)
-      toast.error("Failed to save note")
+      toast.error(error instanceof Error ? error.message : "Failed to save note")
     } finally {
       setIsSaving(false)
     }

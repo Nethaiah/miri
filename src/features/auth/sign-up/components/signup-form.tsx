@@ -63,19 +63,11 @@ export function SignupForm({
         throw new Error(errorMessage)
       }
 
-      toast.success("Account created successfully!", {
-        description: "You can now sign in to continue.",
-        position: "bottom-right",
-      })
+      toast.success("Account created successfully!")
       
       router.push("/sign-in")
     } catch (error) {
-      toast.error("Signup failed", {
-        description: error instanceof Error 
-          ? error.message 
-          : "Failed to create account",
-        position: "bottom-right",
-      })
+      toast.error(error instanceof Error ? error.message : "Failed to create account")
     } finally {
       setIsLoading(false)
     }
@@ -105,12 +97,7 @@ export function SignupForm({
         window.location.href = result.data.url
       }
     } catch (error) {
-      toast.error(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login failed`, {
-        description: error instanceof Error 
-          ? error.message 
-          : `Failed to login with ${provider}`,
-        position: "bottom-right",
-      })
+      toast.error(error instanceof Error ? error.message : `Failed to login with ${provider}`)
       setIsSocialLoading(null)
     }
   }

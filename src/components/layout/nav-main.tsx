@@ -224,7 +224,10 @@ export function NavMain({
   const handleFolderCreate = React.useCallback(async (payload: { name: string; emoji?: string; description?: string }) => {
     try {
       const res = await (client as any).folders.$post({ json: payload })
-      if (!res.ok) throw new Error("Failed to create folder")
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to create folder")
+      }
       await fetchFolders()
       toast.success(`Folder "${payload.name}" created`)
       setAddDialogOpen(false)
@@ -240,8 +243,12 @@ export function NavMain({
         param: { id: editingFolder.id },
         json: payload,
       })
-      if (!res.ok) throw new Error("Failed to update folder")
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to update folder")
+      }
       await fetchFolders()
+      toast.success(`Folder "${payload.name}" updated`)
       setRenameDialogOpen(false)
       setEditingFolder(null)
     } catch (error) {
@@ -259,14 +266,17 @@ export function NavMain({
     const { id, name } = folderToDelete
     try {
       const res = await (client as any).folders[":id"].$delete({ param: { id } })
-      if (!res.ok) throw new Error("Failed to delete folder")
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to delete folder")
+      }
       await fetchFolders()
       toast.success(`Folder "${name}" deleted`)
       setDeleteDialogOpen(false)
       setFolderToDelete(null)
     } catch (error) {
       console.error("Error deleting folder:", error)
-      toast.error("Failed to delete folder")
+      toast.error(error instanceof Error ? error.message : "Failed to delete folder")
     }
   }, [folderToDelete, fetchFolders])
 
@@ -274,7 +284,10 @@ export function NavMain({
     async (folderId: string) => {
       try {
         const res = await (client as any).notes.$post({ json: { folderId } })
-        if (!res.ok) throw new Error("Failed to create note")
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to create note")
+        }
         const data = await res.json()
         const createdNote = data.note as Note | undefined
         if (!createdNote?.id) throw new Error("Invalid note response")
@@ -286,7 +299,7 @@ export function NavMain({
         router.push(`/note/${createdNote.id}`)
       } catch (error) {
         console.error("Error creating note:", error)
-        toast.error("Failed to create note")
+        toast.error(error instanceof Error ? error.message : "Failed to create note")
       }
     },
     [router]
@@ -296,7 +309,10 @@ export function NavMain({
     async (folderId: string, noteId: string, noteTitle?: string | null) => {
       try {
         const res = await (client as any).notes[":id"].$delete({ param: { id: noteId } })
-        if (!res.ok) throw new Error("Failed to delete note")
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to delete note")
+        }
         setNotesByFolder((prev) => {
           const existing = prev[folderId] || []
           return { ...prev, [folderId]: existing.filter((n) => n.id !== noteId) }
@@ -305,7 +321,7 @@ export function NavMain({
         toast.success(`Note "${noteTitle || "Note"}" deleted`)
       } catch (error) {
         console.error("Error deleting note:", error)
-        toast.error("Failed to delete note")
+        toast.error(error instanceof Error ? error.message : "Failed to delete note")
       }
     },
     [pathname, router]
@@ -338,7 +354,10 @@ export function NavMain({
             content: sourceNote.content ?? "",
           },
         })
-        if (!res.ok) throw new Error("Failed to duplicate note")
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to duplicate note")
+        }
         const data = await res.json()
         const duplicatedNote = data.note as Note | undefined
         if (!duplicatedNote?.id) throw new Error("Invalid note response")
@@ -350,7 +369,7 @@ export function NavMain({
         toast.success(`Note "${sourceNote.title}" duplicated`)
       } catch (error) {
         console.error("Error duplicating note:", error)
-        toast.error("Failed to duplicate note")
+        toast.error(error instanceof Error ? error.message : "Failed to duplicate note")
       }
     },
     [router]
