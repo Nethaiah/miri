@@ -100,19 +100,59 @@ export function NavMain({
   )
   const foldersBaseUrl = foldersNavItem?.url ?? "/folders"
 
-  // Sort and Show State
-  const [sortMode, setSortMode] = React.useState<"manual" | "last_edited">("manual")
-  const [showCount, setShowCount] = React.useState<string>("10")
+  // Sort and Show State - with localStorage persistence
+  const [sortMode, setSortMode] = React.useState<"alphabetical" | "last_edited">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("nav-sort-mode")
+      if (saved === "alphabetical" || saved === "last_edited") return saved
+    }
+    return "alphabetical"
+  })
+  const [showCount, setShowCount] = React.useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("nav-show-count")
+      if (saved) return saved
+    }
+    return "10"
+  })
+
+  // Persist sort/show preferences to localStorage
+  React.useEffect(() => {
+    localStorage.setItem("nav-sort-mode", sortMode)
+  }, [sortMode])
+
+  React.useEffect(() => {
+    localStorage.setItem("nav-show-count", showCount)
+  }, [showCount])
+
+  // Helper to get the most recent note updatedAt for a folder
+  const getLatestNoteTime = React.useCallback((folderId: string): number => {
+    const notes = notesByFolder[folderId] || []
+    if (notes.length === 0) return 0
+    
+    return Math.max(
+      ...notes.map((note) => {
+        const time = note.updatedAt
+        if (!time) return 0
+        return new Date(time).getTime()
+      })
+    )
+  }, [notesByFolder])
 
   // Processed Folders
   const processedFolders = React.useMemo(() => {
     let result = [...folders]
     
     // Sort
-    if (sortMode === "last_edited") {
-        // Fallback to name sort if updatedAt isn't available in schema yet
-        // In a real app, use: (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        result.sort((a, b) => a.name.localeCompare(b.name))
+    if (sortMode === "alphabetical") {
+      result.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortMode === "last_edited") {
+      // Sort by which folder has the most recently edited note
+      result.sort((a, b) => {
+        const timeA = getLatestNoteTime(a.id)
+        const timeB = getLatestNoteTime(b.id)
+        return timeB - timeA // Most recent first
+      })
     }
     
     // Limit
@@ -122,7 +162,7 @@ export function NavMain({
     }
 
     return result
-  }, [folders, sortMode, showCount])
+  }, [folders, sortMode, showCount, getLatestNoteTime])
 
   const fetchNotesForFolders = React.useCallback(
     async (folderIds: string[]) => {
@@ -201,6 +241,8 @@ export function NavMain({
                 payload.content !== undefined
                   ? payload.content
                   : notes[index].content,
+              // Update timestamp for immediate re-sorting
+              updatedAt: new Date(),
             }
             next[folderId] = [
               ...notes.slice(0, index),
@@ -419,7 +461,7 @@ export function NavMain({
                         <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="flex-1">Sort</span>
                         <span className="ml-auto text-xs text-muted-foreground">
-                            {sortMode === "manual" ? "Manual" : "Last edited"}
+                            {sortMode === "alphabetical" ? "Alphabetical" : "Last edited"}
                         </span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent className="w-48">
@@ -427,7 +469,7 @@ export function NavMain({
                             value={sortMode}
                             onValueChange={(value) => setSortMode(value as any)}
                         >
-                            <DropdownMenuRadioItem value="manual">Manual</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="alphabetical">Alphabetical</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="last_edited">Last edited</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                     </DropdownMenuSubContent>

@@ -121,11 +121,11 @@ export function SignupForm({
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="name">Full Name</FieldLabel>
+                    <FieldLabel htmlFor="name">Username</FieldLabel>
                     <Input
                       {...field}
                       id="name"
-                      placeholder="John Doe"
+                      placeholder="Username"
                       aria-invalid={fieldState.invalid}
                       disabled={isLoading}
                     />
