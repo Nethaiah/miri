@@ -511,22 +511,34 @@ export function NavMain({
           </div>
         </SidebarGroupLabel>
         <SidebarMenu>
-          <FolderTree
-            baseUrl={foldersBaseUrl}
-            folders={processedFolders}
-            notesByFolder={notesByFolder}
-            isMobile={isMobile}
-            onRenameFolder={(folder) => {
-              setEditingFolder(folder)
-              setRenameDialogOpen(true)
-            }}
-            onDeleteFolder={openDeleteDialog}
-            onCreateNote={(folderId) => void handleCreateNote(folderId)}
-            onOpenNote={(noteId) => router.push(`/note/${noteId}`)}
-            onDeleteNote={openNoteDeleteDialog}
-            onDuplicateNote={(folderId, note) => void handleDuplicateNote(folderId, note)}
-            activeNoteId={activeNoteId}
-          />
+          {processedFolders.length === 0 ? (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setAddDialogOpen(true)}
+                className="text-muted-foreground"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create your first folder</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ) : (
+            <FolderTree
+              baseUrl={foldersBaseUrl}
+              folders={processedFolders}
+              notesByFolder={notesByFolder}
+              isMobile={isMobile}
+              onRenameFolder={(folder) => {
+                setEditingFolder(folder)
+                setRenameDialogOpen(true)
+              }}
+              onDeleteFolder={openDeleteDialog}
+              onCreateNote={(folderId) => void handleCreateNote(folderId)}
+              onOpenNote={(noteId) => router.push(`/note/${noteId}`)}
+              onDeleteNote={openNoteDeleteDialog}
+              onDuplicateNote={(folderId, note) => void handleDuplicateNote(folderId, note)}
+              activeNoteId={activeNoteId}
+            />
+          )}
         </SidebarMenu>
       </SidebarGroup>
 

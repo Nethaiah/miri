@@ -9,14 +9,13 @@ body {
   }
 }
 
-body {
+/* Scoped font styling - do NOT apply to body to avoid global font pollution */
+.simple-editor-wrapper {
   font-family: "Inter", sans-serif;
   color: var(--tt-theme-text);
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
-  padding: 0;
-  overscroll-behavior-y: none;
 }
 
 html,

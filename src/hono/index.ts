@@ -9,6 +9,9 @@ import socialAuth from "./route/auth/google";
 import folders from "./route/folder";
 import notes from "./route/note";
 import upload from "./route/upload";
+import boards from "./route/board";
+import columns from "./route/column";
+import cards from "./route/card";
 
 const app = new Hono<{
   Variables: {
@@ -81,6 +84,11 @@ app.route("/notes", notes);
 
 // upload routes
 app.route("/upload", upload);
+
+// kanban routes
+app.route("/boards", boards);
+app.route("/columns", columns);
+app.route("/cards", cards);
 
 // better auth mount handler
 app.on(["POST", "GET"], "/auth/*", (c) => {

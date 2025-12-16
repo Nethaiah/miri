@@ -56,8 +56,6 @@ import { MarkButton } from "@/components/tiptap-ui/mark-button"
 import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
 import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 import { MoveNodeButton } from "@/components/tiptap-ui/move-node-button"
-import { SlashCommandTriggerButton } from "@/components/tiptap-ui/slash-command-trigger-button"
-import { EmojiTriggerButton } from "@/components/tiptap-ui/emoji-trigger-button"
 import { CopyToClipboardButton } from "@/components/tiptap-ui/copy-to-clipboard-button"
 
 // --- Icons ---
@@ -173,8 +171,6 @@ const MainToolbarContent = ({
       <ToolbarSeparator />
 
       <ToolbarGroup>
-        <SlashCommandTriggerButton />
-        <EmojiTriggerButton />
         <CopyToClipboardButton 
           copyWithFormatting={true} 
           onCopied={() => toast.success("Copied to clipboard!")}

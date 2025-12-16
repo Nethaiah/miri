@@ -106,3 +106,61 @@ export const note = pgTable("note", {
 
 export type Note = typeof note.$inferSelect
 export type NewNote = typeof note.$inferInsert
+
+// ============ KANBAN BOARDS ============
+
+export const board = pgTable("board", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}, (table) => [
+  index("board_user_id_idx").on(table.userId),
+]);
+
+export type Board = typeof board.$inferSelect
+export type NewBoard = typeof board.$inferInsert
+
+export const kanbanColumn = pgTable("kanban_column", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  boardId: uuid("board_id")
+    .notNull()
+    .references(() => board.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  color: text("color"),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("kanban_column_board_id_idx").on(table.boardId),
+]);
+
+export type KanbanColumn = typeof kanbanColumn.$inferSelect
+export type NewKanbanColumn = typeof kanbanColumn.$inferInsert
+
+export const kanbanCard = pgTable("kanban_card", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  columnId: uuid("column_id")
+    .notNull()
+    .references(() => kanbanColumn.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  dueDate: timestamp("due_date"),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}, (table) => [
+  index("kanban_card_column_id_idx").on(table.columnId),
+]);
+
+export type KanbanCard = typeof kanbanCard.$inferSelect
+export type NewKanbanCard = typeof kanbanCard.$inferInsert
