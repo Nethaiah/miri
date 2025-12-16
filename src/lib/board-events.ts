@@ -2,6 +2,7 @@ export type BoardUpdatedPayload = {
   id: string
   name?: string
   description?: string | null
+  updatedAt?: Date
 }
 
 const listeners = new Set<(payload: BoardUpdatedPayload) => void>()

@@ -164,3 +164,31 @@ export const kanbanCard = pgTable("kanban_card", {
 
 export type KanbanCard = typeof kanbanCard.$inferSelect
 export type NewKanbanCard = typeof kanbanCard.$inferInsert
+
+// ============ CALENDAR EVENTS ============
+
+export const calendarEvent = pgTable("calendar_event", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at").notNull(),
+  color: text("color"), // Optional color for event display
+  noteId: uuid("note_id")
+    .references(() => note.id, { onDelete: "set null" }), // Optional link to a note
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}, (table) => [
+  index("calendar_event_user_id_idx").on(table.userId),
+  index("calendar_event_start_at_idx").on(table.startAt),
+  index("calendar_event_note_id_idx").on(table.noteId),
+]);
+
+export type CalendarEvent = typeof calendarEvent.$inferSelect
+export type NewCalendarEvent = typeof calendarEvent.$inferInsert

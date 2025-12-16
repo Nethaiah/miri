@@ -12,6 +12,7 @@ import upload from "./route/upload";
 import boards from "./route/board";
 import columns from "./route/column";
 import cards from "./route/card";
+import calendar from "./route/calendar";
 
 const app = new Hono<{
   Variables: {
@@ -89,6 +90,9 @@ app.route("/upload", upload);
 app.route("/boards", boards);
 app.route("/columns", columns);
 app.route("/cards", cards);
+
+// calendar routes
+app.route("/calendar", calendar);
 
 // better auth mount handler
 app.on(["POST", "GET"], "/auth/*", (c) => {

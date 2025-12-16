@@ -442,7 +442,7 @@ export function NavMain({
 
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center justify-between pr-2 group/label w-full">
-          <span>Private</span>
+          <span>Folders</span>
           <div className="flex items-center opacity-0 group-hover/label:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

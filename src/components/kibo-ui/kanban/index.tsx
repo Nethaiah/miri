@@ -26,6 +26,7 @@ import {
   type ReactNode,
   useContext,
   useState,
+  useEffect,
 } from "react";
 import { createPortal } from "react-dom";
 import tunnel from "tunnel-rat";
@@ -211,6 +212,12 @@ export const KanbanProvider = <
   ...props
 }: KanbanProviderProps<T, C>) => {
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Only render DnD context on client to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -272,11 +279,10 @@ export const KanbanProvider = <
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveCardId(null);
 
-    onDragEnd?.(event);
-
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
+      onDragEnd?.(event);
       return;
     }
 
@@ -288,6 +294,9 @@ export const KanbanProvider = <
     newData = arrayMove(newData, oldIndex, newIndex);
 
     onDataChange?.(newData);
+    
+    // Call onDragEnd AFTER data change so parent has updated data
+    onDragEnd?.(event);
   };
 
   const announcements: Announcements = {
@@ -315,6 +324,22 @@ export const KanbanProvider = <
     },
   };
 
+  // Show placeholder during SSR to avoid hydration mismatch
+  if (!isMounted) {
+    return (
+      <KanbanContext.Provider value={{ columns, data, activeCardId }}>
+        <div
+          className={cn(
+            "grid size-full auto-cols-fr grid-flow-col gap-4",
+            className
+          )}
+        >
+          {columns.map((column) => children(column))}
+        </div>
+      </KanbanContext.Provider>
+    );
+  }
+
   return (
     <KanbanContext.Provider value={{ columns, data, activeCardId }}>
       <DndContext
@@ -334,13 +359,12 @@ export const KanbanProvider = <
         >
           {columns.map((column) => children(column))}
         </div>
-        {typeof window !== "undefined" &&
-          createPortal(
-            <DragOverlay>
-              <t.Out />
-            </DragOverlay>,
-            document.body
-          )}
+        {createPortal(
+          <DragOverlay>
+            <t.Out />
+          </DragOverlay>,
+          document.body
+        )}
       </DndContext>
     </KanbanContext.Provider>
   );

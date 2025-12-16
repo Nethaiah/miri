@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MoreHorizontal, Plus, LayoutGrid, Trash2, Pencil } from "lucide-react"
+import { MoreHorizontal, Plus, LayoutGrid, Trash2, Pencil, ArrowUpDown, Hash } from "lucide-react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
@@ -19,6 +19,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
@@ -71,6 +76,55 @@ export function NavBoards() {
     }
   }, [])
 
+  // Sort and Show State - with localStorage persistence
+  const [sortMode, setSortMode] = React.useState<"alphabetical" | "last_edited">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("boards-sort-mode")
+      if (saved === "alphabetical" || saved === "last_edited") return saved
+    }
+    return "alphabetical"
+  })
+  const [showCount, setShowCount] = React.useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("boards-show-count")
+      if (saved) return saved
+    }
+    return "10"
+  })
+
+  // Persist sort/show preferences to localStorage
+  React.useEffect(() => {
+    localStorage.setItem("boards-sort-mode", sortMode)
+  }, [sortMode])
+
+  React.useEffect(() => {
+    localStorage.setItem("boards-show-count", showCount)
+  }, [showCount])
+
+  // Processed Boards with sorting and limiting
+  const processedBoards = React.useMemo(() => {
+    let result = [...boards]
+    
+    // Sort
+    if (sortMode === "alphabetical") {
+      result.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortMode === "last_edited") {
+      result.sort((a, b) => {
+        const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+        const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+        return timeB - timeA // Most recent first
+      })
+    }
+    
+    // Limit
+    const limit = parseInt(showCount, 10)
+    if (!isNaN(limit) && limit > 0) {
+      result = result.slice(0, limit)
+    }
+
+    return result
+  }, [boards, sortMode, showCount])
+
   React.useEffect(() => {
     void fetchBoards()
   }, [fetchBoards])
@@ -85,6 +139,7 @@ export function NavBoards() {
                 ...board,
                 name: payload.name !== undefined ? payload.name : board.name,
                 description: payload.description !== undefined ? payload.description : board.description,
+                updatedAt: payload.updatedAt !== undefined ? payload.updatedAt : board.updatedAt,
               }
             : board
         )
@@ -175,17 +230,72 @@ export function NavBoards() {
         <SidebarGroupLabel className="flex items-center justify-between pr-2 group/label w-full">
           <span>Boards</span>
           <div className="flex items-center opacity-0 group-hover/label:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="bottom" className="w-56">
+                {/* SORT SUBMENU */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="flex-1">Sort</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {sortMode === "alphabetical" ? "Alphabetical" : "Last edited"}
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-48">
+                    <DropdownMenuRadioGroup
+                      value={sortMode}
+                      onValueChange={(value) => setSortMode(value as any)}
+                    >
+                      <DropdownMenuRadioItem value="alphabetical">Alphabetical</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="last_edited">Last edited</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                {/* SHOW SUBMENU */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="flex-1">Show</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {showCount} items
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-48">
+                    <DropdownMenuRadioGroup
+                      value={showCount}
+                      onValueChange={setShowCount}
+                    >
+                      <DropdownMenuRadioItem value="5">5 items</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="10">10 items</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="15">15 items</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="20">20 items</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="100">100 items</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <button
               type="button"
               onClick={handleCreateBoard}
-              className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ml-0.5"
             >
               <Plus className="h-4 w-4" />
             </button>
           </div>
         </SidebarGroupLabel>
         <SidebarMenu>
-          {boards.map((board) => (
+          {processedBoards.map((board) => (
             <SidebarMenuItem key={board.id}>
               <SidebarMenuButton
                 asChild

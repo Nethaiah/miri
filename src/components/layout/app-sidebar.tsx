@@ -9,6 +9,7 @@ import {
 
 import { NavMain } from "@/components/layout/nav-main"
 import { NavBoards } from "@/components/layout/nav-boards"
+import { NavCalendar } from "@/components/layout/nav-calendar"
 import { NavProjects } from "@/components/layout/nav-projects"
 import { NavUser } from "@/components/layout/nav-user"
 import {
@@ -119,6 +120,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           <NavBoards />
         </SidebarContent>
         <SidebarFooter>
+          <NavCalendar />
           {user && <NavUser user={user} />}
         </SidebarFooter>
       </Sidebar>

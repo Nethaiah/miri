@@ -195,25 +195,39 @@ export function BoardEditor({
     return () => clearTimeout(timeout)
   }, [hasChanges, saveBoard])
 
-  // Handle card drag end
+  // Save card order - called directly with new cards data
+  const saveCardsOrder = useCallback(async (cardsToSave: KanbanItem[]) => {
+    try {
+      const cardUpdates = cardsToSave.map((card, index) => ({
+        id: card.id,
+        columnId: card.column,
+        order: index,
+      }))
+
+      await (client as any).cards["reorder"].$put({
+        json: { cards: cardUpdates },
+      })
+
+      // Emit board update so sidebar re-sorts by last edited
+      emitBoardUpdated({ id, updatedAt: new Date() })
+    } catch (error) {
+      console.error("Failed to save card order:", error)
+      toast.error("Failed to save changes")
+    }
+  }, [id])
+
+  // Handle card data change (from drag) - update state AND save
+  const handleDataChange = useCallback((newData: KanbanItem[]) => {
+    setCards(newData)
+    void saveCardsOrder(newData)
+  }, [saveCardsOrder])
+
+  // Handle card drag end (optional callback for any post-drag logic)
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
-      try {
-        const cardUpdates = cards.map((card, index) => ({
-          id: card.id,
-          columnId: card.column,
-          order: index,
-        }))
-
-        await (client as any).cards["reorder"].$put({
-          json: { cards: cardUpdates },
-        })
-      } catch (error) {
-        console.error("Failed to save card order:", error)
-        toast.error("Failed to save changes")
-      }
+      // Drag end hook - saving is handled by handleDataChange
     },
-    [cards]
+    []
   )
 
   // Add new card
@@ -250,6 +264,9 @@ export function BoardEditor({
         },
       ])
 
+      // Update board's last edited time in sidebar
+      emitBoardUpdated({ id, updatedAt: new Date() })
+
       setAddCardDialogOpen(false)
       setNewCardName("")
       setNewCardDescription("")
@@ -259,7 +276,7 @@ export function BoardEditor({
       console.error("Error adding card:", error)
       toast.error(error instanceof Error ? error.message : "Failed to add card")
     }
-  }, [addCardColumnId, newCardName, newCardDescription, newCardDueDate])
+  }, [id, addCardColumnId, newCardName, newCardDescription, newCardDueDate])
 
   // Open edit card dialog
   const openEditCardDialog = useCallback((card: KanbanItem) => {
@@ -302,6 +319,9 @@ export function BoardEditor({
         )
       )
 
+      // Update board's last edited time in sidebar
+      emitBoardUpdated({ id, updatedAt: new Date() })
+
       setEditCardDialogOpen(false)
       setEditingCard(null)
       toast.success("Card updated")
@@ -309,7 +329,7 @@ export function BoardEditor({
       console.error("Error updating card:", error)
       toast.error(error instanceof Error ? error.message : "Failed to update card")
     }
-  }, [editingCard, editCardName, editCardDescription, editCardDueDate])
+  }, [id, editingCard, editCardName, editCardDescription, editCardDueDate])
 
   // Delete card
   const confirmDeleteCard = useCallback(async () => {
@@ -325,6 +345,10 @@ export function BoardEditor({
       }
 
       setCards((prev) => prev.filter((c) => c.id !== cardToDelete.id))
+
+      // Update board's last edited time in sidebar
+      emitBoardUpdated({ id, updatedAt: new Date() })
+
       toast.success("Card deleted")
     } catch (error) {
       console.error("Error deleting card:", error)
@@ -333,7 +357,7 @@ export function BoardEditor({
       setDeleteCardDialogOpen(false)
       setCardToDelete(null)
     }
-  }, [cardToDelete])
+  }, [id, cardToDelete])
 
   // Add new column
   const handleAddColumn = useCallback(async () => {
@@ -471,7 +495,7 @@ export function BoardEditor({
               <KanbanProvider
                 columns={columns}
                 data={cards}
-                onDataChange={(newData) => setCards(newData as KanbanItem[])}
+                onDataChange={(newData) => handleDataChange(newData as KanbanItem[])}
                 onDragEnd={handleDragEnd}
               >
                 {(column) => (

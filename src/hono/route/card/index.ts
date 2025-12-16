@@ -7,24 +7,24 @@ import { and, eq, asc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 
 const cardCreateSchema = z.object({
-  columnId: z.string().uuid(),
+  columnId: z.uuid(),
   name: z.string().min(1).max(500),
   description: z.string().max(2000).optional().nullable(),
-  dueDate: z.string().datetime().optional().nullable(),
+  dueDate: z.iso.datetime().optional().nullable(),
 });
 
 const cardUpdateSchema = z.object({
   name: z.string().min(1).max(500).optional(),
   description: z.string().max(2000).optional().nullable(),
-  dueDate: z.string().datetime().optional().nullable(),
-  columnId: z.string().uuid().optional(),
+  dueDate: z.iso.datetime().optional().nullable(),
+  columnId: z.uuid().optional(),
   order: z.number().int().min(0).optional(),
 });
 
 const cardReorderSchema = z.object({
   cards: z.array(z.object({
-    id: z.string().uuid(),
-    columnId: z.string().uuid(),
+    id: z.uuid(),
+    columnId: z.uuid(),
     order: z.number().int().min(0),
   })),
 });
@@ -130,6 +130,35 @@ cards.post("/", zValidator("json", cardCreateSchema), async (c) => {
   }
 });
 
+// Batch reorder/move cards (for drag and drop)
+// NOTE: This route MUST be defined BEFORE /:id to avoid matching 'reorder' as an ID
+cards.put("/reorder", zValidator("json", cardReorderSchema), async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = c.req.valid("json");
+
+    // Update each card's position
+    for (const card of data.cards) {
+      await db
+        .update(kanbanCard)
+        .set({ 
+          columnId: card.columnId,
+          order: card.order 
+        })
+        .where(eq(kanbanCard.id, card.id));
+    }
+
+    return c.json({ message: "Cards reordered" }, 200);
+  } catch (error: any) {
+    console.error("Reorder cards error:", error);
+    return c.json({ error: error?.message || "Failed to reorder cards" }, 500);
+  }
+});
+
 // Update a card
 cards.put("/:id", zValidator("json", cardUpdateSchema), async (c) => {
   try {
@@ -198,34 +227,6 @@ cards.put("/:id", zValidator("json", cardUpdateSchema), async (c) => {
   } catch (error: any) {
     console.error("Update card error:", error);
     return c.json({ error: error?.message || "Failed to update card" }, 500);
-  }
-});
-
-// Batch reorder/move cards (for drag and drop)
-cards.put("/reorder", zValidator("json", cardReorderSchema), async (c) => {
-  try {
-    const user = c.get("user");
-    if (!user) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
-
-    const data = c.req.valid("json");
-
-    // Update each card's position
-    for (const card of data.cards) {
-      await db
-        .update(kanbanCard)
-        .set({ 
-          columnId: card.columnId,
-          order: card.order 
-        })
-        .where(eq(kanbanCard.id, card.id));
-    }
-
-    return c.json({ message: "Cards reordered" }, 200);
-  } catch (error: any) {
-    console.error("Reorder cards error:", error);
-    return c.json({ error: error?.message || "Failed to reorder cards" }, 500);
   }
 });
 
