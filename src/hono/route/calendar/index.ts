@@ -9,19 +9,19 @@ import { auth } from "@/lib/auth";
 const eventCreateSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().max(2000).optional().nullable(),
-  startAt: z.string().datetime(),
-  endAt: z.string().datetime(),
+  startAt: z.iso.datetime(),
+  endAt: z.iso.datetime(),
   color: z.string().max(50).optional().nullable(),
-  noteId: z.string().uuid().optional().nullable(),
+  noteId: z.uuid().optional().nullable(),
 });
 
 const eventUpdateSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(2000).optional().nullable(),
-  startAt: z.string().datetime().optional(),
-  endAt: z.string().datetime().optional(),
+  startAt: z.iso.datetime().optional(),
+  endAt: z.iso.datetime().optional(),
   color: z.string().max(50).optional().nullable(),
-  noteId: z.string().uuid().optional().nullable(),
+  noteId: z.uuid().optional().nullable(),
 });
 
 const calendar = new Hono<{
@@ -69,6 +69,8 @@ calendar.get("/", async (c) => {
           name: kanbanCard.name,
           dueDate: kanbanCard.dueDate,
           columnName: kanbanColumn.name,
+          columnColor: kanbanColumn.color,
+          description: kanbanCard.description,
           boardName: board.name,
           boardId: board.id,
         })
@@ -87,6 +89,8 @@ calendar.get("/", async (c) => {
           name: kanbanCard.name,
           dueDate: kanbanCard.dueDate,
           columnName: kanbanColumn.name,
+          columnColor: kanbanColumn.color,
+          description: kanbanCard.description,
           boardName: board.name,
           boardId: board.id,
         })

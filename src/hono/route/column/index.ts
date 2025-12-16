@@ -14,6 +14,7 @@ const columnCreateSchema = z.object({
 const columnUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   order: z.number().int().min(0).optional(),
+  color: z.string().optional().nullable(),
 });
 
 const columnReorderSchema = z.object({
@@ -155,6 +156,10 @@ columns.put("/:id", zValidator("json", columnUpdateSchema), async (c) => {
 
     if (data.order !== undefined) {
       updateData.order = data.order;
+    }
+
+    if (data.color !== undefined) {
+      updateData.color = data.color || null;
     }
 
     const [updatedColumn] = await db

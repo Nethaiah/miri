@@ -21,6 +21,15 @@ import {
   type Feature,
   type Status,
 } from "@/components/kibo-ui/calendar"
+import {
+  ColorPicker,
+  ColorPickerHue,
+  ColorPickerSelection,
+  ColorPickerAlpha,
+  ColorPickerEyeDropper,
+  ColorPickerOutput,
+  ColorPickerFormat,
+} from "@/components/kibo-ui/color-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,7 +54,7 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import type { CalendarEvent, Note } from "@/db/schema"
+import type { CalendarEvent, Note, Folder } from "@/db/schema"
 
 import {
   Command,
@@ -66,6 +75,8 @@ type KanbanDueDate = {
   name: string
   dueDate: Date
   columnName: string
+  columnColor?: string | null
+  description?: string | null
   boardName: string
   boardId: string
 }
@@ -79,6 +90,7 @@ function CalendarPageContent() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [kanbanDueDates, setKanbanDueDates] = useState<KanbanDueDate[]>([])
   const [notes, setNotes] = useState<Note[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Add/Edit event dialog
@@ -133,20 +145,29 @@ function CalendarPageContent() {
     }
   }, [month, year])
 
-  // Fetch notes
+  // Fetch notes and folders
   useEffect(() => {
-    const fetchNotes = async () => {
+    const fetchData = async () => {
       try {
-        const res = await (client as any).notes.$get()
-        if (res.ok) {
-          const data = await res.json()
+        const [notesRes, foldersRes] = await Promise.all([
+          (client as any).notes.$get(),
+          (client as any).folders.$get()
+        ])
+
+        if (notesRes.ok) {
+          const data = await notesRes.json()
           setNotes(data.notes || [])
         }
+
+        if (foldersRes.ok) {
+          const data = await foldersRes.json()
+          setFolders(data.folders || [])
+        }
       } catch (error) {
-        console.error("Error fetching notes:", error)
+        console.error("Error fetching data:", error)
       }
     }
-    void fetchNotes()
+    void fetchData()
   }, [])
 
   useEffect(() => {
@@ -172,19 +193,22 @@ function CalendarPageContent() {
       name: `📋 ${card.name}`,
       startAt: new Date(card.dueDate),
       endAt: new Date(card.dueDate),
-      status: KANBAN_STATUS,
+      status: { ...KANBAN_STATUS, color: card.columnColor || KANBAN_STATUS.color },
     }))
 
-    const noteFeatures: Feature[] = notes.map((note) => ({
-      id: `note-${note.id}`,
-      name: `📝 ${note.title}`,
-      startAt: new Date(note.createdAt),
-      endAt: new Date(note.createdAt),
-      status: NOTE_STATUS,
-    }))
+    const noteFeatures: Feature[] = notes.map((note) => {
+      const folder = folders.find(f => f.id === note.folderId)
+      return {
+        id: `note-${note.id}`,
+        name: `📝 ${note.title}`,
+        startAt: new Date(note.createdAt),
+        endAt: new Date(note.createdAt),
+        status: { ...NOTE_STATUS, color: folder?.color || NOTE_STATUS.color },
+      }
+    })
 
     return [...calendarFeatures, ...kanbanFeatures, ...noteFeatures]
-  }, [events, kanbanDueDates, notes])
+  }, [events, kanbanDueDates, notes, folders])
 
   // Open add event dialog
   const openAddEventDialog = useCallback(() => {
@@ -492,15 +516,48 @@ function CalendarPageContent() {
             </div>
             <div className="grid gap-2">
               <Label>Color</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={eventColor}
-                  onChange={(e) => setEventColor(e.target.value)}
-                  className="w-10 h-10 rounded border cursor-pointer"
-                />
-                <span className="text-sm text-muted-foreground">{eventColor}</span>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                  >
+                    <div 
+                      className="w-4 h-4 rounded-full border shadow-sm"
+                      style={{ backgroundColor: eventColor }}
+                    />
+                    <span className="font-mono text-muted-foreground">
+                      {eventColor}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4 content-box" align="start">
+                  <ColorPicker
+                    value={eventColor}
+                    onChange={(v: any) => {
+                       const hex = "#" + v.slice(0, 3).map((c: number) => Math.round(c).toString(16).padStart(2, '0')).join('')
+                       setEventColor(hex)
+                    }}
+                  >
+                     <div className="flex w-full flex-col gap-4">
+                       <ColorPickerSelection className="aspect-square w-full rounded-md border" />
+                       <div className="flex flex-col gap-2">
+                         <div className="flex items-center gap-2">
+                           <ColorPickerEyeDropper />
+                           <div className="flex w-full flex-col gap-2">
+                             <ColorPickerHue />
+                             <ColorPickerAlpha />
+                           </div>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <ColorPickerOutput />
+                           <ColorPickerFormat />
+                         </div>
+                       </div>
+                     </div>
+                  </ColorPicker>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <DialogFooter className="flex justify-between">
@@ -546,9 +603,35 @@ function CalendarPageContent() {
               <p className="text-sm text-muted-foreground">
                 Due: {format(viewingEvent.endAt, "PPP")}
               </p>
+              {viewingEvent.id.startsWith("kanban-") && (() => {
+                 const cardId = viewingEvent.id.replace("kanban-", "")
+                 const card = kanbanDueDates.find(k => k.id === cardId)
+                 if (card?.description) {
+                   return (
+                     <div className="mt-4 text-sm whitespace-pre-wrap rounded-md bg-muted p-2 text-muted-foreground">
+                       {card.description}
+                     </div>
+                   )
+                 }
+                 return null
+              })()}
             </div>
           )}
           <DialogFooter>
+            {viewingEvent?.id.startsWith("kanban-") && (
+              <Button 
+                variant="outline"
+                className="mr-auto"
+                onClick={() => {
+                   const cardId = viewingEvent.id.replace("kanban-", "")
+                   const card = kanbanDueDates.find(k => k.id === cardId)
+                   if (card) router.push(`/board/${card.boardId}`)
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Board
+              </Button>
+            )}
             <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>

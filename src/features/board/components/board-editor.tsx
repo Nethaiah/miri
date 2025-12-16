@@ -14,6 +14,15 @@ import {
   KanbanCard,
   type DragEndEvent,
 } from "@/components/kibo-ui/kanban"
+import {
+  ColorPicker,
+  ColorPickerHue,
+  ColorPickerSelection,
+  ColorPickerAlpha,
+  ColorPickerEyeDropper,
+  ColorPickerOutput,
+  ColorPickerFormat,
+} from "@/components/kibo-ui/color-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -438,6 +447,29 @@ export function BoardEditor({
     }
   }, [])
 
+  // Update column color
+  const handleUpdateColumnColor = useCallback(async (columnId: string, color: string) => {
+    // Optimistic update
+    setColumns((prev) => 
+      prev.map((c) => (c.id === columnId ? { ...c, color } : c))
+    )
+
+    try {
+      const res = await (client as any).columns[":id"].$put({
+        param: { id: columnId },
+        json: { color },
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to update column color")
+      }
+    } catch (error) {
+      console.error("Error updating column color:", error)
+      toast.error("Failed to update color")
+      // Revert could be implemented here if needed, but for color it's usually fine
+    }
+  }, [])
+
   // Format due date for display
   const formatDueDate = (date: Date | null | undefined) => {
     if (!date) return null
@@ -481,14 +513,14 @@ export function BoardEditor({
           <div className="min-h-[400px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Board</h3>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setAddColumnDialogOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Column
-              </Button>
+              </Button> */}
             </div>
 
             {columns.length > 0 ? (
@@ -502,10 +534,43 @@ export function BoardEditor({
                   <KanbanBoard key={column.id} id={column.id} className="bg-muted/50! dark:bg-muted/20!">
                     <KanbanHeader className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: getColumnColor(column.name, (column as KanbanColumnItem).color) }}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <div
+                              className="h-3 w-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-primary/50 transition-all"
+                              style={{ backgroundColor: getColumnColor(column.name, (column as KanbanColumnItem).color) }}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-4 content-box" align="start">
+                            <ColorPicker
+                              value={getColumnColor(column.name, (column as KanbanColumnItem).color)}
+                              onChange={(v: any) => {
+                                const hex = "#" + v.slice(0, 3).map((c: number) => Math.round(c).toString(16).padStart(2, '0')).join('')
+                                const currentColor = getColumnColor(column.name, (column as KanbanColumnItem).color)
+                                if (hex.toLowerCase() !== currentColor.toLowerCase()) {
+                                  handleUpdateColumnColor(column.id, hex)
+                                }
+                              }}
+                            >
+                               <div className="flex w-full flex-col gap-4">
+                                 <ColorPickerSelection className="aspect-square w-full rounded-md border" />
+                                 <div className="flex flex-col gap-2">
+                                   <div className="flex items-center gap-2">
+                                     <ColorPickerEyeDropper />
+                                     <div className="flex w-full flex-col gap-2">
+                                       <ColorPickerHue />
+                                       <ColorPickerAlpha />
+                                     </div>
+                                   </div>
+                                   <div className="flex items-center gap-2">
+                                     <ColorPickerOutput />
+                                     <ColorPickerFormat />
+                                   </div>
+                                 </div>
+                               </div>
+                            </ColorPicker>
+                          </PopoverContent>
+                        </Popover>
                         <span className="font-semibold">{column.name}</span>
                         <span className="text-xs text-muted-foreground ml-1">
                           {cards.filter(c => c.column === column.id).length}

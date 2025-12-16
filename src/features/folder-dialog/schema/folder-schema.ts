@@ -10,6 +10,7 @@ export const folderSchema = z.object({
     .string()
     .max(500, "Description must be 500 characters or less")
     .optional(),
+  color: z.string().optional(),
 })
 
 export type FolderFormData = z.infer<typeof folderSchema>
