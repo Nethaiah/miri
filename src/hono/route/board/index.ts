@@ -85,6 +85,151 @@ boards.post("/", zValidator("json", boardCreateSchema), async (c) => {
   }
 });
 
+// PATCH /api/boards/:id/pin - Toggle pin status
+// IMPORTANT: Must come BEFORE GET /:id for proper route matching
+boards.patch("/:id/pin", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    const [existingBoard] = await db
+      .select()
+      .from(board)
+      .where(and(eq(board.id, id), eq(board.userId, user.id)))
+      .limit(1);
+
+    if (!existingBoard) {
+      return c.json({ error: "Board not found" }, 404);
+    }
+
+    const [updatedBoard] = await db
+      .update(board)
+      .set({ pinned: !existingBoard.pinned })
+      .where(and(eq(board.id, id), eq(board.userId, user.id)))
+      .returning();
+
+    return c.json({ board: updatedBoard }, 200);
+  } catch (error: any) {
+    console.error("Toggle board pin error:", error);
+    return c.json({ error: error?.message || "Failed to toggle board pin" }, 500);
+  }
+});
+
+// PATCH /api/boards/:id/favorite - Toggle favorite status
+boards.patch("/:id/favorite", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    const [existingBoard] = await db
+      .select()
+      .from(board)
+      .where(and(eq(board.id, id), eq(board.userId, user.id)))
+      .limit(1);
+
+    if (!existingBoard) {
+      return c.json({ error: "Board not found" }, 404);
+    }
+
+    const [updatedBoard] = await db
+      .update(board)
+      .set({ favorited: !existingBoard.favorited })
+      .where(and(eq(board.id, id), eq(board.userId, user.id)))
+      .returning();
+
+    return c.json({ board: updatedBoard }, 200);
+  } catch (error: any) {
+    console.error("Toggle board favorite error:", error);
+    return c.json({ error: error?.message || "Failed to toggle board favorite" }, 500);
+  }
+});
+
+// POST /api/boards/:id/duplicate - Duplicate a board
+boards.post("/:id/duplicate", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    // Get the original board
+    const [originalBoard] = await db
+      .select()
+      .from(board)
+      .where(and(eq(board.id, id), eq(board.userId, user.id)))
+      .limit(1);
+
+    if (!originalBoard) {
+      return c.json({ error: "Board not found" }, 404);
+    }
+
+    // Create new board with copied data
+    const [newBoard] = await db
+      .insert(board)
+      .values({
+        userId: user.id,
+        name: `${originalBoard.name} (Copy)`,
+        description: originalBoard.description,
+        pinned: false,
+        favorited: false,
+      })
+      .returning();
+
+    // Get original columns
+    const originalColumns = await db
+      .select()
+      .from(kanbanColumn)
+      .where(eq(kanbanColumn.boardId, id))
+      .orderBy(asc(kanbanColumn.order));
+
+    // Duplicate columns and cards
+    for (const originalColumn of originalColumns) {
+      const [newColumn] = await db
+        .insert(kanbanColumn)
+        .values({
+          boardId: newBoard.id,
+          name: originalColumn.name,
+          color: originalColumn.color,
+          order: originalColumn.order,
+        })
+        .returning();
+
+      const originalCards = await db
+        .select()
+        .from(kanbanCard)
+        .where(eq(kanbanCard.columnId, originalColumn.id))
+        .orderBy(asc(kanbanCard.order));
+
+      if (originalCards.length > 0) {
+        await db.insert(kanbanCard).values(
+          originalCards.map((card) => ({
+            columnId: newColumn.id,
+            name: card.name,
+            description: card.description,
+            dueDate: card.dueDate,
+            order: card.order,
+          }))
+        );
+      }
+    }
+
+    return c.json({ board: newBoard }, 201);
+  } catch (error: any) {
+    console.error("Duplicate board error:", error);
+    return c.json({ error: error?.message || "Failed to duplicate board" }, 500);
+  }
+});
+
 // Get board with columns and cards
 boards.get("/:id", async (c) => {
   try {

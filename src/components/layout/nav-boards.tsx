@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { MoreHorizontal, Plus, LayoutGrid, Trash2, Pencil, ArrowUpDown, Hash } from "lucide-react"
+import { MoreHorizontal, Plus, LayoutGrid, Trash2, ArrowUpDown, Hash, Star, Copy, ArrowRightToLine, ExternalLink, PanelRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
@@ -35,7 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
 import { client } from "@/lib/api-client"
 import type { Board } from "@/db/schema"
 import { subscribeBoardUpdated } from "@/lib/board-events"
@@ -50,11 +50,6 @@ export function NavBoards() {
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [boardToDelete, setBoardToDelete] = React.useState<{ id: string; name: string } | null>(null)
-  
-  // Rename dialog
-  const [renameDialogOpen, setRenameDialogOpen] = React.useState(false)
-  const [boardToRename, setBoardToRename] = React.useState<{ id: string; name: string } | null>(null)
-  const [newName, setNewName] = React.useState("")
 
   const activeBoardId = React.useMemo(() => {
     const match = pathname?.match(/^\/board\/([^/]+)/)
@@ -105,16 +100,23 @@ export function NavBoards() {
   const processedBoards = React.useMemo(() => {
     let result = [...boards]
     
-    // Sort
-    if (sortMode === "alphabetical") {
-      result.sort((a, b) => a.name.localeCompare(b.name))
-    } else if (sortMode === "last_edited") {
-      result.sort((a, b) => {
+    // Sort by pinned first, then by selected sort mode
+    result.sort((a, b) => {
+      // Pinned items always come first
+      if (a.pinned !== b.pinned) {
+        return a.pinned ? -1 : 1
+      }
+      
+      // Then apply secondary sort
+      if (sortMode === "alphabetical") {
+        return a.name.localeCompare(b.name)
+      } else if (sortMode === "last_edited") {
         const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
         const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
         return timeB - timeA // Most recent first
-      })
-    }
+      }
+      return 0
+    })
     
     // Limit
     const limit = parseInt(showCount, 10)
@@ -189,40 +191,112 @@ export function NavBoards() {
     }
   }, [boardToDelete, pathname, router])
 
-  const handleRenameBoard = React.useCallback(async () => {
-    if (!boardToRename || !newName.trim()) return
-    try {
-      const res = await (client as any).boards[":id"].$put({
-        param: { id: boardToRename.id },
-        json: { name: newName.trim() },
-      })
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || "Failed to rename board")
-      }
-      setBoards((prev) =>
-        prev.map((b) => (b.id === boardToRename.id ? { ...b, name: newName.trim() } : b))
-      )
-      toast.success(`Board renamed to "${newName.trim()}"`)
-      setRenameDialogOpen(false)
-      setBoardToRename(null)
-      setNewName("")
-    } catch (error) {
-      console.error("Error renaming board:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to rename board")
-    }
-  }, [boardToRename, newName])
-
   const openDeleteDialog = React.useCallback((board: Board) => {
     setBoardToDelete({ id: board.id, name: board.name })
     setDeleteDialogOpen(true)
   }, [])
 
-  const openRenameDialog = React.useCallback((board: Board) => {
-    setBoardToRename({ id: board.id, name: board.name })
-    setNewName(board.name)
-    setRenameDialogOpen(true)
+  const handlePinBoard = React.useCallback(
+    async (boardId: string) => {
+      try {
+        const res = await (client as any).boards[":id"].pin.$patch({ param: { id: boardId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to toggle board pin")
+        }
+        const data = await res.json()
+        setBoards((prev) =>
+          prev.map((b) => (b.id === boardId ? { ...b, pinned: data.board.pinned } : b))
+        )
+        toast.success("Board pin status updated")
+      } catch (error: any) {
+        console.error("Error toggling board pin:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to toggle board pin")
+      }
+    },
+    []
+  )
+
+  // Track the last favorited board to emit event after state update
+  const lastFavoritedBoardRef = React.useRef<{ id: string; favorited: boolean } | null>(null)
+
+  const handleFavoriteBoard = React.useCallback(
+    async (boardId: string) => {
+      try {
+        const res = await (client as any).boards[":id"].favorite.$patch({ param: { id: boardId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to toggle board favorite")
+        }
+        const data = await res.json()
+        setBoards((prev) =>
+          prev.map((b) => {
+            if (b.id === boardId) {
+              // Store info to emit event after render
+              lastFavoritedBoardRef.current = { id: boardId, favorited: data.board.favorited }
+              return { ...b, favorited: data.board.favorited }
+            }
+            return b
+          })
+        )
+        toast.success("Board favorite status updated")
+      } catch (error: any) {
+        console.error("Error toggling board favorite:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to toggle board favorite")
+      }
+    },
+    []
+  )
+
+  // Emit favorite event after state update completes
+  React.useEffect(() => {
+    if (lastFavoritedBoardRef.current) {
+      const { emitFavoriteUpdated } = require("@/lib/favorite-events")
+      emitFavoriteUpdated({ 
+        type: "board", 
+        id: lastFavoritedBoardRef.current.id, 
+        favorited: lastFavoritedBoardRef.current.favorited 
+      })
+      lastFavoritedBoardRef.current = null
+    }
+  }, [boards])
+
+  const handleCopyLink = React.useCallback(async (url: string) => {
+    if (typeof window === "undefined") return
+    const fullUrl = `${window.location.origin}${url}`
+    try {
+      await navigator.clipboard.writeText(fullUrl)
+      toast.success("Link copied to clipboard")
+    } catch {
+      toast.error("Failed to copy link")
+    }
   }, [])
+
+  const handleOpenNewTab = React.useCallback((url: string) => {
+    if (typeof window === "undefined") return
+    window.open(url, "_blank")
+  }, [])
+
+  const handleDuplicateBoard = React.useCallback(
+    async (boardId: string) => {
+      try {
+        const res = await (client as any).boards[":id"].duplicate.$post({ param: { id: boardId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to duplicate board")
+        }
+        const data = await res.json()
+        const newBoard = data.board as Board
+        setBoards((prev) => [newBoard, ...prev])
+        router.push(`/board/${newBoard.id}`)
+        toast.success("Board duplicated successfully")
+      } catch (error: any) {
+        console.error("Error duplicating board:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to duplicate board")
+      }
+    },
+    [router]
+  )
 
   return (
     <>
@@ -296,11 +370,12 @@ export function NavBoards() {
         </SidebarGroupLabel>
         <SidebarMenu>
           {processedBoards.map((board) => (
-            <SidebarMenuItem key={board.id}>
+            <SidebarMenuItem key={board.id} className="relative group/item">
               <SidebarMenuButton
                 asChild
                 isActive={activeBoardId === board.id}
                 tooltip={board.name}
+                className="group-hover/item:bg-sidebar-accent group-hover/item:text-sidebar-accent-foreground"
               >
                 <Link href={`/board/${board.id}`}>
                   <LayoutGrid className="h-4 w-4" />
@@ -309,21 +384,60 @@ export function NavBoards() {
               </SidebarMenuButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuAction showOnHover>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </SidebarMenuAction>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity z-10 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start">
-                  <DropdownMenuItem onClick={() => openRenameDialog(board)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Rename
+                <DropdownMenuContent side="right" align="start" className="w-56">
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground truncate border-b mb-1">
+                    {board.name}
+                  </div>
+                  
+                  <DropdownMenuItem onClick={() => handlePinBoard(board.id)}>
+                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {board.pinned ? "Unpin" : "Pin"}
                   </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => handleFavoriteBoard(board.id)}>
+                    <Star className={`mr-2 h-4 w-4 ${board.favorited ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                    {board.favorited ? "Remove from Favorites" : "Add to Favorites"}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem onClick={() => handleCopyLink(`/board/${board.id}`)}>
+                    <Copy className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Copy link
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => handleDuplicateBoard(board.id)}>
+                    <ArrowRightToLine className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Duplicate
+                  </DropdownMenuItem>
+
                   <DropdownMenuItem
                     onClick={() => openDeleteDialog(board)}
-                    className="text-destructive focus:text-destructive"
+                    className="text-muted-foreground focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem onClick={() => handleOpenNewTab(`/board/${board.id}`)}>
+                    <ExternalLink className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Open in new tab
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => toast("Side peek coming soon")}>
+                    <PanelRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Open in side peek
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -360,36 +474,6 @@ export function NavBoards() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Rename Dialog */}
-      <AlertDialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Rename Board</AlertDialogTitle>
-            <AlertDialogDescription>
-              Enter a new name for this board.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Board name"
-            className="mt-2"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                handleRenameBoard()
-              }
-            }}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRenameBoard}>
-              Rename
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

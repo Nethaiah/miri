@@ -46,6 +46,8 @@ import {
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { FolderTree } from "@/components/layout/nav-main-folder-tree"
+import { NavFavorites } from "@/components/layout/nav-favorites"
+
 
 export function NavMain({
   items,
@@ -143,17 +145,23 @@ export function NavMain({
   const processedFolders = React.useMemo(() => {
     let result = [...folders]
     
-    // Sort
-    if (sortMode === "alphabetical") {
-      result.sort((a, b) => a.name.localeCompare(b.name))
-    } else if (sortMode === "last_edited") {
-      // Sort by which folder has the most recently edited note
-      result.sort((a, b) => {
+    // Sort by pinned first, then by selected sort mode
+    result.sort((a, b) => {
+      // Pinned items always come first
+      if (a.pinned !== b.pinned) {
+        return a.pinned ? -1 : 1
+      }
+      
+      // Then apply secondary sort
+      if (sortMode === "alphabetical") {
+        return a.name.localeCompare(b.name)
+      } else if (sortMode === "last_edited") {
         const timeA = getLatestNoteTime(a.id)
         const timeB = getLatestNoteTime(b.id)
         return timeB - timeA // Most recent first
-      })
-    }
+      }
+      return 0
+    })
     
     // Limit
     const limit = parseInt(showCount, 10)
@@ -417,6 +425,114 @@ export function NavMain({
     [router]
   )
 
+  const handlePinFolder = React.useCallback(
+    async (folderId: string) => {
+      try {
+        const res = await (client as any).folders[":id"].pin.$patch({ param: { id: folderId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to toggle folder pin")
+        }
+        await fetchFolders()
+        toast.success("Folder pin status updated")
+      } catch (error) {
+        console.error("Error toggling folder pin:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to toggle folder pin")
+      }
+    },
+    [fetchFolders]
+  )
+
+  const handlePinNote = React.useCallback(
+    async (noteId: string) => {
+      try {
+        const res = await (client as any).notes[":id"].pin.$patch({ param: { id: noteId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to toggle note pin")
+        }
+        
+        // Update local state
+        setNotesByFolder((prev) => {
+          const next: Record<string, Note[]> = { ...prev }
+          for (const folderId of Object.keys(next)) {
+            const notes = next[folderId]
+            const index = notes.findIndex((n) => n.id === noteId)
+            if (index !== -1) {
+              const updatedNote = { ...notes[index], pinned: !notes[index].pinned }
+              next[folderId] = [
+                ...notes.slice(0, index),
+                updatedNote,
+                ...notes.slice(index + 1),
+              ]
+              break
+            }
+          }
+          return next
+        })
+        toast.success("Note pin status updated")
+      } catch (error) {
+        console.error("Error toggling note pin:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to toggle note pin")
+      }
+    },
+    []
+  )
+
+  // Track the last favorited note to emit event after state update
+  const lastFavoritedNoteRef = React.useRef<{ id: string; favorited: boolean } | null>(null)
+
+  const handleFavoriteNote = React.useCallback(
+    async (noteId: string) => {
+      try {
+        const res = await (client as any).notes[":id"].favorite.$patch({ param: { id: noteId } })
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.error || "Failed to toggle note favorite")
+        }
+        
+        // Update local state
+        setNotesByFolder((prev) => {
+          const next: Record<string, Note[]> = { ...prev }
+          for (const folderId of Object.keys(next)) {
+            const notes = next[folderId]
+            const index = notes.findIndex((n) => n.id === noteId)
+            if (index !== -1) {
+              const updatedNote = { ...notes[index], favorited: !notes[index].favorited }
+              next[folderId] = [
+                ...notes.slice(0, index),
+                updatedNote,
+                ...notes.slice(index + 1),
+              ]
+              // Store info to emit event after render
+              lastFavoritedNoteRef.current = { id: noteId, favorited: updatedNote.favorited }
+              break
+            }
+          }
+          return next
+        })
+        toast.success("Note favorite status updated")
+      } catch (error) {
+        console.error("Error toggling note favorite:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to toggle note favorite")
+      }
+    },
+    []
+  )
+
+  // Emit favorite event after state update completes
+  React.useEffect(() => {
+    if (lastFavoritedNoteRef.current) {
+      const { emitFavoriteUpdated } = require("@/lib/favorite-events")
+      emitFavoriteUpdated({ 
+        type: "note", 
+        id: lastFavoritedNoteRef.current.id, 
+        favorited: lastFavoritedNoteRef.current.favorited 
+      })
+      lastFavoritedNoteRef.current = null
+    }
+  }, [notesByFolder])
+
   const platformItems = React.useMemo(
     () => items.filter((item) => !item.isFolderable),
     [items]
@@ -439,6 +555,8 @@ export function NavMain({
           ))}
         </SidebarMenu>
       </SidebarGroup>
+
+      <NavFavorites />
 
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center justify-between pr-2 group/label w-full">
@@ -536,6 +654,9 @@ export function NavMain({
               onOpenNote={(noteId) => router.push(`/note/${noteId}`)}
               onDeleteNote={openNoteDeleteDialog}
               onDuplicateNote={(folderId, note) => void handleDuplicateNote(folderId, note)}
+              onPinFolder={(folderId) => void handlePinFolder(folderId)}
+              onPinNote={(noteId) => void handlePinNote(noteId)}
+              onFavoriteNote={(noteId) => void handleFavoriteNote(noteId)}
               activeNoteId={activeNoteId}
             />
           )}

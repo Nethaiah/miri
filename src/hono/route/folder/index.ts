@@ -35,6 +35,42 @@ folders.get("/", async (c) => {
   }
 });
 
+// PATCH /api/folders/:id/pin - Toggle pin status
+// IMPORTANT: Must come BEFORE other /:id routes for proper route matching
+folders.patch("/:id/pin", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    // Check if folder exists and belongs to user
+    const [existingFolder] = await db
+      .select()
+      .from(folder)
+      .where(and(eq(folder.id, id), eq(folder.userId, user.id)))
+      .limit(1);
+
+    if (!existingFolder) {
+      return c.json({ error: "Folder not found" }, 404);
+    }
+
+    // Toggle pin status
+    const [updatedFolder] = await db
+      .update(folder)
+      .set({ pinned: !existingFolder.pinned })
+      .where(and(eq(folder.id, id), eq(folder.userId, user.id)))
+      .returning();
+
+    return c.json({ folder: updatedFolder }, 200);
+  } catch (error: any) {
+    console.error("Toggle folder pin error:", error);
+    return c.json({ error: error?.message || "Failed to toggle folder pin" }, 500);
+  }
+});
+
 // GET /api/folders/:id - Get a specific folder by ID
 folders.get("/:id", async (c) => {
   try {

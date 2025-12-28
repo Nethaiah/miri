@@ -44,6 +44,9 @@ type FolderTreeProps = {
   onOpenNote: (noteId: string) => void
   onDeleteNote: (folderId: string, noteId: string, title?: string | null) => void
   onDuplicateNote: (folderId: string, note: Note) => void
+  onPinFolder: (folderId: string) => void
+  onPinNote: (noteId: string) => void
+  onFavoriteNote: (noteId: string) => void
   activeNoteId?: string
 }
 
@@ -58,6 +61,9 @@ export function FolderTree({
   onOpenNote,
   onDeleteNote,
   onDuplicateNote,
+  onPinFolder,
+  onPinNote,
+  onFavoriteNote,
   activeNoteId,
 }: FolderTreeProps) {
   const [openFolders, setOpenFolders] = React.useState<Set<string>>(
@@ -152,8 +158,8 @@ export function FolderTree({
                         <ActionMenuContent 
                             type="folder"
                             title={folderItem.name}
-                            onCopyLink={() => handleCopyLink(`${baseUrl}/${folderItem.id}`)}
-                            onOpenNewTab={() => handleOpenNewTab(`${baseUrl}/${folderItem.id}`)}
+                            item={folderItem}
+                            onPin={() => onPinFolder(folderItem.id)}
                             onRename={() => onRenameFolder({ id: folderItem.id, name: folderItem.name })}
                             onDelete={() => onDeleteFolder(folderItem.id, folderItem.name)}
                             isMobile={isMobile}
@@ -215,11 +221,13 @@ export function FolderTree({
                                         <ActionMenuContent 
                                             type="note"
                                             title={noteItem.title || "Untitled"}
+                                            item={noteItem}
                                             onCopyLink={() => handleCopyLink(`/note/${noteItem.id}`)}
                                             onOpenNewTab={() => handleOpenNewTab(`/note/${noteItem.id}`)}
+                                            onPin={() => onPinNote(noteItem.id)}
+                                            onFavorite={() => onFavoriteNote(noteItem.id)}
                                             onDuplicate={() => onDuplicateNote(folderItem.id, noteItem)}
                                             onDelete={() => onDeleteNote(folderItem.id, noteItem.id, noteItem.title)}
-                                            onOpen={() => onOpenNote(noteItem.id)}
                                             isMobile={isMobile}
                                         />
                                     </DropdownMenu>
@@ -241,22 +249,26 @@ export function FolderTree({
 function ActionMenuContent({ 
     type, 
     title,
+    item,
     onCopyLink,
     onOpenNewTab,
+    onPin,
+    onFavorite,
     onRename,
     onDuplicate,
     onDelete,
-    onOpen,
     isMobile
 }: { 
     type: "folder" | "note",
     title: string,
-    onCopyLink: () => void,
-    onOpenNewTab: () => void,
+    item: any, // FolderType | Note
+    onCopyLink?: () => void,
+    onOpenNewTab?: () => void,
+    onPin: () => void,
+    onFavorite?: () => void,
     onRename?: () => void,
     onDuplicate?: () => void,
     onDelete: () => void,
-    onOpen?: () => void,
     isMobile: boolean
 }) {
     return (
@@ -266,7 +278,6 @@ function ActionMenuContent({
             align={isMobile ? "end" : "start"}
             alignOffset={-4}
             onClick={(e) => {
-                // Prevent clicks inside dropdown from bubbling to parent note row
                 e.stopPropagation()
             }}
         >
@@ -274,17 +285,26 @@ function ActionMenuContent({
                 {title}
             </div>
             
-            <DropdownMenuItem onClick={() => toast("Added to favorites (Demo)")}>
-                <Star className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Add to Favorites</span>
+            <DropdownMenuItem onClick={onPin}>
+                <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{item?.pinned ? "Unpin" : "Pin"}</span>
             </DropdownMenuItem>
+
+            {type === "note" && onFavorite && (
+                <DropdownMenuItem onClick={onFavorite}>
+                    <Star className={`mr-2 h-4 w-4 ${item?.favorited ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                    <span>{item?.favorited ? "Remove from Favorites" : "Add to Favorites"}</span>
+                </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onClick={onCopyLink}>
-                <Copy className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Copy link</span>
-            </DropdownMenuItem>
+            {type === "note" && onCopyLink && (
+                <DropdownMenuItem onClick={onCopyLink}>
+                    <Copy className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>Copy link</span>
+                </DropdownMenuItem>
+            )}
 
             {type === "note" && onDuplicate && (
                 <DropdownMenuItem onClick={onDuplicate}>
@@ -300,10 +320,12 @@ function ActionMenuContent({
                 </DropdownMenuItem>
             )}
 
-            <DropdownMenuItem onClick={() => toast("Move to feature coming soon")}>
-                <CornerUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Move to</span>
-            </DropdownMenuItem>
+            {type === "note" && (
+                <DropdownMenuItem onClick={() => toast("Move to feature coming soon")}>
+                    <CornerUpRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>Move to</span>
+                </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem 
                 onClick={onDelete}
@@ -313,17 +335,19 @@ function ActionMenuContent({
                 <span>Delete</span>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem onClick={onOpenNewTab}>
-                <ExternalLink className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Open in new tab</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem onClick={() => toast("Side peek coming soon")}>
-                <PanelRight className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Open in side peek</span>
-            </DropdownMenuItem>
+            {type === "note" && onOpenNewTab && (
+                <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onOpenNewTab}>
+                        <ExternalLink className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>Open in new tab</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toast("Side peek coming soon")}>
+                        <PanelRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>Open in side peek</span>
+                    </DropdownMenuItem>
+                </>
+            )}
             
         </DropdownMenuContent>
     )

@@ -606,11 +606,25 @@ function CalendarPageContent() {
               {viewingEvent.id.startsWith("kanban-") && (() => {
                  const cardId = viewingEvent.id.replace("kanban-", "")
                  const card = kanbanDueDates.find(k => k.id === cardId)
-                 if (card?.description) {
+                 if (card) {
                    return (
-                     <div className="mt-4 text-sm whitespace-pre-wrap rounded-md bg-muted p-2 text-muted-foreground">
-                       {card.description}
-                     </div>
+                     <>
+                       <div className="mt-2 flex items-center gap-2">
+                         <span className="text-sm text-muted-foreground">Status:</span>
+                         <div className="flex items-center gap-1.5">
+                           <div
+                             className="h-2 w-2 rounded-full"
+                             style={{ backgroundColor: card.columnColor || viewingEvent.status.color }}
+                           />
+                           <span className="text-sm font-medium">{card.columnName}</span>
+                         </div>
+                       </div>
+                       {card.description && (
+                         <div className="mt-4 text-sm whitespace-pre-wrap rounded-md bg-muted p-2 text-muted-foreground">
+                           {card.description}
+                         </div>
+                       )}
+                     </>
                    )
                  }
                  return null

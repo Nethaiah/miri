@@ -139,6 +139,73 @@ notes.delete("/:id", async (c) => {
   }
 });
 
+// PATCH /api/notes/:id/pin - Toggle pin status
+// IMPORTANT: Must come BEFORE GET /:id for proper route matching
+notes.patch("/:id/pin", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    const [existingNote] = await db
+      .select()
+      .from(note)
+      .where(and(eq(note.id, id), eq(note.userId, user.id)))
+      .limit(1);
+
+    if (!existingNote) {
+      return c.json({ error: "Note not found" }, 404);
+    }
+
+    const [updatedNote] = await db
+      .update(note)
+      .set({ pinned: !existingNote.pinned })
+      .where(and(eq(note.id, id), eq(note.userId, user.id)))
+      .returning();
+
+    return c.json({ note: updatedNote }, 200);
+  } catch (error: any) {
+    console.error("Toggle note pin error:", error);
+    return c.json({ error: error?.message || "Failed to toggle note pin" }, 500);
+  }
+});
+
+// PATCH /api/notes/:id/favorite - Toggle favorite status
+notes.patch("/:id/favorite", async (c) => {
+  try {
+    const user = c.get("user");
+    if (!user) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const id = c.req.param("id");
+
+    const [existingNote] = await db
+      .select()
+      .from(note)
+      .where(and(eq(note.id, id), eq(note.userId, user.id)))
+      .limit(1);
+
+    if (!existingNote) {
+      return c.json({ error: "Note not found" }, 404);
+    }
+
+    const [updatedNote] = await db
+      .update(note)
+      .set({ favorited: !existingNote.favorited })
+      .where(and(eq(note.id, id), eq(note.userId, user.id)))
+      .returning();
+
+    return c.json({ note: updatedNote }, 200);
+  } catch (error: any) {
+    console.error("Toggle note favorite error:", error);
+    return c.json({ error: error?.message || "Failed to toggle note favorite" }, 500);
+  }
+});
+
 notes.get("/:id", async (c) => {
   try {
     const user = c.get("user");

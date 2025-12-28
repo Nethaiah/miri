@@ -13,6 +13,7 @@ import boards from "./route/board";
 import columns from "./route/column";
 import cards from "./route/card";
 import calendar from "./route/calendar";
+import favorites from "./route/favorites";
 
 const app = new Hono<{
   Variables: {
@@ -27,7 +28,7 @@ app.use(
   cors({
     origin: process.env.NEXT_PUBLIC_URL!,
     allowHeaders: ['X-Custom-Header', 'Upgrade-Insecure-Requests', 'Content-Type'],
-    allowMethods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'],
+    allowMethods: ['POST', 'GET', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
     maxAge: 600,
     credentials: true,
@@ -93,6 +94,9 @@ app.route("/cards", cards);
 
 // calendar routes
 app.route("/calendar", calendar);
+
+// favorites routes
+app.route("/favorites", favorites);
 
 // better auth mount handler
 app.on(["POST", "GET"], "/auth/*", (c) => {

@@ -82,7 +82,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "baseline-browser-mapping": "^2.9.4",
+    "baseline-browser-mapping": "^2.9.11",
     "drizzle-kit": "^0.31.6",
     "sass": "^1.94.2",
     "tailwindcss": "^4",

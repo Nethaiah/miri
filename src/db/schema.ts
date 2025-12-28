@@ -69,6 +69,7 @@ export const folder = pgTable("folder", {
   description: text("description"),
   color: text("color"), // Optional color for folder
   order: integer("order").default(0).notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -94,6 +95,8 @@ export const note = pgTable("note", {
   title: text("title").notNull(),
   description: text("description"),
   content: text("content").notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
+  favorited: boolean("favorited").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -116,6 +119,8 @@ export const board = pgTable("board", {
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
+  pinned: boolean("pinned").default(false).notNull(),
+  favorited: boolean("favorited").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
