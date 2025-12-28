@@ -278,7 +278,7 @@ export function NavFavorites() {
           </DropdownMenu>
         </div>
       </SidebarGroupLabel>
-      <SidebarMenu>
+      <SidebarMenu className="gap-0">
         {!isLoading && processedFavorites.length === 0 ? (
           <SidebarMenuItem>
             <SidebarMenuButton className="text-muted-foreground pointer-events-none">
@@ -319,11 +319,6 @@ export function NavFavorites() {
                   <div className="px-2 py-1.5 text-xs text-muted-foreground truncate border-b mb-1">
                     {item.name}
                   </div>
-                  
-                  <DropdownMenuItem onClick={() => handleTogglePin(item)}>
-                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <span>Pin</span>
-                  </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => handleToggleFavorite(item)}>
                     <Star className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -363,6 +358,33 @@ export function NavFavorites() {
                     <PanelRight className="mr-2 h-4 w-4 text-muted-foreground" />
                     <span>Open in side peek</span>
                   </DropdownMenuItem>
+
+                  {/* Last edited info */}
+                  {(item.updatedAt || item.createdAt) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground/70">
+                        {item.updatedAt && (
+                          <div>Last edited: {new Date(item.updatedAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}</div>
+                        )}
+                        {item.createdAt && (
+                          <div>Created: {new Date(item.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}</div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

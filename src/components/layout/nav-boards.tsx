@@ -368,7 +368,7 @@ export function NavBoards() {
             </button>
           </div>
         </SidebarGroupLabel>
-        <SidebarMenu>
+        <SidebarMenu className="gap-0">
           {processedBoards.map((board) => (
             <SidebarMenuItem key={board.id} className="relative group/item">
               <SidebarMenuButton
@@ -397,11 +397,6 @@ export function NavBoards() {
                   <div className="px-2 py-1.5 text-xs text-muted-foreground truncate border-b mb-1">
                     {board.name}
                   </div>
-                  
-                  <DropdownMenuItem onClick={() => handlePinBoard(board.id)}>
-                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                    {board.pinned ? "Unpin" : "Pin"}
-                  </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => handleFavoriteBoard(board.id)}>
                     <Star className={`mr-2 h-4 w-4 ${board.favorited ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
@@ -439,6 +434,33 @@ export function NavBoards() {
                     <PanelRight className="mr-2 h-4 w-4 text-muted-foreground" />
                     Open in side peek
                   </DropdownMenuItem>
+
+                  {/* Last edited info */}
+                  {(board.updatedAt || board.createdAt) && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground/70">
+                        {board.updatedAt && (
+                          <div>Last edited: {new Date(board.updatedAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}</div>
+                        )}
+                        {board.createdAt && (
+                          <div>Created: {new Date(board.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}</div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

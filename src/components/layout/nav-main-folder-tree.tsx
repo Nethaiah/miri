@@ -246,6 +246,19 @@ export function FolderTree({
   )
 }
 
+// Helper to format date
+function formatLastEdited(date: Date | string | null | undefined): string {
+    if (!date) return ""
+    const d = typeof date === "string" ? new Date(date) : date
+    return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    })
+}
+
 function ActionMenuContent({ 
     type, 
     title,
@@ -271,6 +284,9 @@ function ActionMenuContent({
     onDelete: () => void,
     isMobile: boolean
 }) {
+    const lastEdited = formatLastEdited(item?.updatedAt)
+    const createdAt = formatLastEdited(item?.createdAt)
+
     return (
         <DropdownMenuContent
             className="w-56"
@@ -284,20 +300,16 @@ function ActionMenuContent({
             <div className="px-2 py-1.5 text-xs text-muted-foreground truncate border-b mb-1">
                 {title}
             </div>
-            
-            <DropdownMenuItem onClick={onPin}>
-                <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>{item?.pinned ? "Unpin" : "Pin"}</span>
-            </DropdownMenuItem>
 
             {type === "note" && onFavorite && (
-                <DropdownMenuItem onClick={onFavorite}>
-                    <Star className={`mr-2 h-4 w-4 ${item?.favorited ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                    <span>{item?.favorited ? "Remove from Favorites" : "Add to Favorites"}</span>
-                </DropdownMenuItem>
+                <>
+                    <DropdownMenuItem onClick={onFavorite}>
+                        <Star className={`mr-2 h-4 w-4 ${item?.favorited ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                        <span>{item?.favorited ? "Remove from Favorites" : "Add to Favorites"}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                </>
             )}
-
-            <DropdownMenuSeparator />
 
             {type === "note" && onCopyLink && (
                 <DropdownMenuItem onClick={onCopyLink}>
@@ -348,7 +360,17 @@ function ActionMenuContent({
                     </DropdownMenuItem>
                 </>
             )}
-            
+
+            {/* Last edited info */}
+            {(lastEdited || createdAt) && (
+                <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground/70">
+                        {lastEdited && <div>Last edited: {lastEdited}</div>}
+                        {createdAt && <div>Created: {createdAt}</div>}
+                    </div>
+                </>
+            )}
         </DropdownMenuContent>
     )
 }

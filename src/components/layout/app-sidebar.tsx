@@ -5,12 +5,11 @@ import {
   FolderOpen,
   LayoutDashboard,
   Settings2,
+  Calendar,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
 import { NavBoards } from "@/components/layout/nav-boards"
-import { NavCalendar } from "@/components/layout/nav-calendar"
-import { NavProjects } from "@/components/layout/nav-projects"
 import { NavUser } from "@/components/layout/nav-user"
 import {
   Sidebar,
@@ -34,6 +33,11 @@ const data = {
       url: "/dashboard",
       icon: LayoutDashboard,
       isActive: true,
+    },
+    {
+      title: "Calendar",
+      url: "/calendar",
+      icon: Calendar,
     },
     {
       title: "Folders",
@@ -120,7 +124,6 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           <NavBoards />
         </SidebarContent>
         <SidebarFooter>
-          <NavCalendar />
           {user && <NavUser user={user} />}
         </SidebarFooter>
       </Sidebar>
